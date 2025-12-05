@@ -2,3 +2,4 @@
 /frontend/node_modules
 *.log
 *.err
+/node_modules
