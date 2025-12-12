@@ -26,33 +26,14 @@ export function StudentLogin({ onLoginSuccess, onBack }: StudentLoginProps) {
       if (result && result.token) {
         // 保存 token 到通用 key 'authToken'，以便所有 API 调用使用
         localStorage.setItem('authToken', result.token);
-
-        // 尝试从后端获取完整用户信息
-        try {
-          const { getCurrentUser } = await import('../utils/api-new');
-          const me = await getCurrentUser();
-          if (me) {
-            localStorage.setItem('student', JSON.stringify(me));
-            onLoginSuccess(me);
-            // Redirect to main app (AI chat tab)
-            window.location.href = '/';
-          } else {
-            // 回退到登录返回的 user 或仅用 username
-            if (result.user) {
-              localStorage.setItem('student', JSON.stringify(result.user));
-              onLoginSuccess(result.user);
-            } else {
-              onLoginSuccess({ id: username });
-            }
-          }
-        } catch (err) {
-          console.warn('无法获取当前用户信息，使用登录返回的数据作为回退', err);
-          if (result.user) {
-            localStorage.setItem('student', JSON.stringify(result.user));
-            onLoginSuccess(result.user);
-          } else {
-            onLoginSuccess({ id: username });
-          }
+        
+        // 保存用户信息和类型
+        if (result.user) {
+          localStorage.setItem('student', JSON.stringify(result.user));
+          localStorage.setItem('userType', result.user?.userType || 'STUDENT');
+          onLoginSuccess(result.user);
+        } else {
+          setError('登录失败，无法获取用户信息');
         }
       } else {
         setError('登录失败，请检查用户名和密码');
@@ -180,11 +161,11 @@ export function StudentLogin({ onLoginSuccess, onBack }: StudentLoginProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
                 <span>登录中...</span>
               </>
             ) : (

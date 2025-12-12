@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { TextbookReader } from './TextbookReader';
 import { HomeworkSection } from './HomeworkSection';
 import { CourseAI } from './CourseAI';
+import { CourseFileReader } from './CourseFileReader';
 
 type Course = {
   id: string;
@@ -23,7 +24,7 @@ type CourseDetailProps = {
   onBack: () => void;
 };
 
-type ViewMode = 'overview' | 'textbook' | 'homework' | 'ai';
+type ViewMode = 'overview' | 'textbook' | 'homework' | 'ai' | 'files';
 
 export function CourseDetail({ course, onBack }: CourseDetailProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
@@ -38,6 +39,10 @@ export function CourseDetail({ course, onBack }: CourseDetailProps) {
 
   if (viewMode === 'ai') {
     return <CourseAI course={course} onBack={() => setViewMode('overview')} />;
+  }
+
+  if (viewMode === 'files') {
+    return <CourseFileReader courseId={course.id} onBack={() => setViewMode('overview')} />;
   }
 
   return (
@@ -58,7 +63,24 @@ export function CourseDetail({ course, onBack }: CourseDetailProps) {
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 max-w-4xl mx-auto space-y-4">
           {/* Main Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow bg-blue-50 border-blue-200"
+              onClick={() => setViewMode('files')}
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-600 text-white rounded-lg">
+                    <FileText size={24} />
+                  </div>
+                  <CardTitle>授课课件</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">查看和下载教学课件</p>
+              </CardContent>
+            </Card>
+
             <Card
               className="cursor-pointer hover:shadow-lg transition-shadow bg-purple-50 border-purple-200"
               onClick={() => setViewMode('textbook')}
@@ -77,12 +99,12 @@ export function CourseDetail({ course, onBack }: CourseDetailProps) {
             </Card>
 
             <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow bg-blue-50 border-blue-200"
+              className="cursor-pointer hover:shadow-lg transition-shadow bg-green-50 border-green-200"
               onClick={() => setViewMode('homework')}
             >
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-600 text-white rounded-lg">
+                  <div className="p-3 bg-green-600 text-white rounded-lg">
                     <PenTool size={24} />
                   </div>
                   <CardTitle>做作业</CardTitle>
@@ -97,12 +119,12 @@ export function CourseDetail({ course, onBack }: CourseDetailProps) {
             </Card>
 
             <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow bg-green-50 border-green-200"
+              className="cursor-pointer hover:shadow-lg transition-shadow bg-orange-50 border-orange-200"
               onClick={() => setViewMode('ai')}
             >
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-green-600 text-white rounded-lg">
+                  <div className="p-3 bg-orange-600 text-white rounded-lg">
                     <MessageSquare size={24} />
                   </div>
                   <CardTitle>AI提问</CardTitle>

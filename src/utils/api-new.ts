@@ -81,14 +81,21 @@ export async function studentLogin(data: StudentLoginRequest): Promise<LoginResp
   if (USE_MOCK) {
     // Mock数据
     await new Promise(resolve => setTimeout(resolve, 500));
+    // 验证密码（简单的本地验证）
+    if (data.password !== '123456') {
+      throw new Error('用户名或密码错误');
+    }
+    
     return {
       token: 'mock-student-token-' + Date.now(),
       user: {
         id: data.studentId,
+        username: data.studentId,
         name: '张三',
         studentId: data.studentId,
         major: '计算机科学与技术',
         grade: '2023级',
+        userType: 'STUDENT',
       }
     };
   }
@@ -106,7 +113,7 @@ export async function studentLogin(data: StudentLoginRequest): Promise<LoginResp
 
   return {
     token: resp.token,
-    user: resp.user || { id: data.studentId },
+    user: resp.user || { id: data.studentId, userType: 'STUDENT' },
   };
 }
 
@@ -127,18 +134,28 @@ export async function teacherLogin(data: TeacherLoginRequest): Promise<LoginResp
   if (USE_MOCK) {
     // Mock数据
     await new Promise(resolve => setTimeout(resolve, 500));
-    if (data.username === 'admin' && data.password === 'admin123') {
-      return {
-        token: 'mock-teacher-token-' + Date.now(),
-        user: {
-          id: '1',
-          username: 'admin',
-          name: '王老师',
-          department: '计算机学院',
-        }
-      };
+    
+    // 支持多个教师账号
+    const teachers: { [key: string]: { name: string; department: string; password: string } } = {
+      'admin': { name: '王老师', department: '计算机学院', password: 'admin123' },
+      'teacher': { name: '李老师', department: '数据科学学院', password: 'teacher123' },
+    };
+    
+    const teacherInfo = teachers[data.username];
+    if (!teacherInfo || teacherInfo.password !== data.password) {
+      throw new Error('用户名或密码错误');
     }
-    throw new Error('用户名或密码错误');
+    
+    return {
+      token: 'mock-teacher-token-' + Date.now(),
+      user: {
+        id: data.username,
+        username: data.username,
+        name: teacherInfo.name,
+        department: teacherInfo.department,
+        userType: 'TEACHER',
+      }
+    };
   }
 
   // 后端使用统一的 /auth/login 接口
@@ -154,7 +171,7 @@ export async function teacherLogin(data: TeacherLoginRequest): Promise<LoginResp
 
   return {
     token: resp.token,
-    user: resp.user || { username: data.username },
+    user: resp.user || { username: data.username, userType: 'TEACHER' },
   };
 }
 
@@ -181,19 +198,65 @@ export async function registerUser(username: string, password: string): Promise<
 
 export async function getUserProfile() {
   if (USE_MOCK) {
-    return {
-      id: '2023001',
-      name: '张三',
-      studentId: '2023001',
-      major: '计算机科学与技术',
-      grade: '2023级',
-      avatar: '',
-      email: 'zhangsan@suat.edu.cn',
-      phone: '138****1234',
-      enrollmentYear: 2023,
-      credits: 45,
-      gpa: 3.75,
-    };
+    // 根据localStorage中的用户类型和信息返回对应的用户资料
+    const userType = localStorage.getItem('userType');
+    const authToken = localStorage.getItem('authToken');
+    const teacher = localStorage.getItem('teacher');
+    const student = localStorage.getItem('student');
+    
+    // 如果没有有效的 authToken，说明用户未登陆，不应该返回任何数据
+    if (!authToken) {
+      return null;
+    }
+    
+    if (userType === 'TEACHER' && teacher) {
+      // 教师信息
+      const teacherData = JSON.parse(teacher);
+      return {
+        id: teacherData.id,
+        name: teacherData.name,
+        username: teacherData.username,
+        department: teacherData.department,
+        userType: 'TEACHER',
+        avatar: '',
+        email: teacherData.username + '@suat.edu.cn',
+        phone: '138****5678',
+      };
+    }
+    
+    if (student) {
+      // 学生信息
+      const studentData = JSON.parse(student);
+      return {
+        id: studentData.id,
+        name: studentData.name,
+        studentId: studentData.studentId,
+        major: studentData.major,
+        grade: studentData.grade,
+        userType: 'STUDENT',
+        avatar: '',
+        email: studentData.id + '@suat.edu.cn',
+        phone: '138****1234',
+        enrollmentYear: 2023,
+        credits: 45,
+        gpa: 3.75,
+        stats: {
+          currentCourses: 5,
+          completedCourses: 12,
+          homeworkCompletionRate: 92,
+          completedHomework: 32,
+          inProgressHomework: 3,
+          overdueHomework: 1,
+          weeklyStudyHours: 18,
+          readingHours: 12,
+          practiceCount: 45,
+          studyStreak: 15,
+        },
+      };
+    }
+    
+    // 没有有效的用户数据，返回 null
+    return null;
   }
 
   return request(buildUrl(API_ENDPOINTS.STUDENT.PROFILE));
@@ -204,38 +267,21 @@ export async function getCourses() {
     return [
       {
         id: '1',
-        name: 'Java程序设计',
-        teacher: '李老师',
+        name: '人工智能导论',
+        teacher: '李金艳',
         credits: 4,
-        schedule: '周一 1-2节, 周三 3-4节',
+        schedule: '周一、周三 8:00-9:40',
         classroom: '教学楼A101',
         progress: 75,
         image: '',
-      },
-      {
-        id: '2',
-        name: '数据结构',
-        teacher: '王老师',
-        credits: 4,
-        schedule: '周二 1-2节, 周四 3-4节',
-        classroom: '教学楼B205',
-        progress: 60,
-        image: '',
-      },
-      {
-        id: '3',
-        name: '数据库原理',
-        teacher: '张老师',
-        credits: 3,
-        schedule: '周三 1-2节, 周五 3-4节',
-        classroom: '教学楼C301',
-        progress: 45,
-        image: '',
+        code: 'CS401',
+        description: '介绍人工智能的基本概念、技术和应用',
+        semester: 'current',
       },
     ];
   }
 
-  return request(buildUrl(API_ENDPOINTS.STUDENT.COURSES));
+  return request(buildUrl(API_ENDPOINTS.COURSE.LIST));
 }
 
 export async function getNotifications() {
@@ -529,6 +575,71 @@ export async function getAnalytics() {
   }
 
   return request(buildUrl(API_ENDPOINTS.ADMIN.ANALYTICS));
+}
+
+// ==================== 课程和课件相关 API ====================
+
+/**
+ * 获取课程的所有文件（课件）
+ */
+export async function getCourseFiles(courseId: string | number) {
+  if (USE_MOCK) {
+    return [
+      {
+        id: '1',
+        fileName: '第1章-AI导论.pdf',
+        fileType: 'pdf',
+        description: '人工智能基础概念讲义',
+        filePath: '/files/course-1/lecture-1.pdf',
+        fileSize: 5242880,
+        uploadedAt: '2024-09-01T10:00:00',
+      },
+      {
+        id: '2',
+        fileName: '第1章-AI导论(补充).pptx',
+        fileType: 'pptx',
+        description: '课堂教学演示文件',
+        filePath: '/files/course-1/lecture-1-slides.pptx',
+        fileSize: 8388608,
+        uploadedAt: '2024-09-02T14:30:00',
+      },
+      {
+        id: '3',
+        fileName: '第2章-机器学习基础.pdf',
+        fileType: 'pdf',
+        description: '机器学习的核心概念',
+        filePath: '/files/course-1/lecture-2.pdf',
+        fileSize: 6291456,
+        uploadedAt: '2024-09-08T10:00:00',
+      },
+    ];
+  }
+
+  return request(
+    buildUrl(API_ENDPOINTS.COURSE.FILES, { courseId })
+  );
+}
+
+/**
+ * 获取单个课件详情
+ */
+export async function getCourseFile(fileId: string | number) {
+  if (USE_MOCK) {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return {
+      id: fileId,
+      fileName: '第1章-AI导论.pdf',
+      fileType: 'pdf',
+      description: '人工智能基础概念讲义',
+      filePath: '/files/course-1/lecture-1.pdf',
+      fileSize: 5242880,
+      uploadedAt: '2024-09-01T10:00:00',
+    };
+  }
+
+  return request(
+    buildUrl(API_ENDPOINTS.COURSE.FILE_DETAIL, { fileId })
+  );
 }
 
 export async function createHomework(data: any) {

@@ -23,9 +23,12 @@ export function AdminLogin({ onLoginSuccess, onBack }: AdminLoginProps) {
 
       // Store teacher info in localStorage
       localStorage.setItem('teacher', JSON.stringify(result.user));
-    // Keep teacherToken for admin UI, but also set `authToken` so shared API helpers include it
-    localStorage.setItem('teacherToken', result.token);
-    localStorage.setItem('authToken', result.token);
+      // Keep teacherToken for admin UI, but also set `authToken` so shared API helpers include it
+      localStorage.setItem('teacherToken', result.token);
+      localStorage.setItem('authToken', result.token);
+      
+      // 保存用户类型为教师
+      localStorage.setItem('userType', result.user?.userType || 'TEACHER');
 
       // Call success callback
       onLoginSuccess(result.user);

@@ -12,6 +12,8 @@ import {
   Lock,
   Smartphone,
   ChevronRight,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -44,25 +46,101 @@ type UserProfile = {
 export function PersonalCenter() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const data = await getUserProfile();
-        setProfile(data);
-      } catch (error) {
-        console.error('Failed to load user profile:', error);
-      } finally {
-        setLoading(false);
+    // 检查是否已登陆
+    const authToken = localStorage.getItem('authToken');
+    setIsLoggedIn(!!authToken);
+
+    // 如果已登陆，加载用户资料
+    if (authToken) {
+      const loadProfile = async () => {
+        try {
+          const data = await getUserProfile();
+          setProfile(data);
+        } catch (error) {
+          console.error('Failed to load user profile:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadProfile();
+    } else {
+      setLoading(false);
+    }
+
+    // 监听登陆成功事件，以便重新加载数据
+    const handleLoginSuccess = () => {
+      const newAuthToken = localStorage.getItem('authToken');
+      if (newAuthToken) {
+        setIsLoggedIn(true);
+        // 重新加载用户资料
+        const loadProfile = async () => {
+          try {
+            const data = await getUserProfile();
+            setProfile(data);
+          } catch (error) {
+            console.error('Failed to load user profile:', error);
+          }
+        };
+        loadProfile();
       }
     };
-    loadProfile();
+
+    window.addEventListener('studentLoginSuccess', handleLoginSuccess);
+    return () => {
+      window.removeEventListener('studentLoginSuccess', handleLoginSuccess);
+    };
   }, []);
+
+  const handleLoginClick = () => {
+    // 获取当前视图的 App 实例来改变视图
+    // 通过发送自定义事件通知 App 组件
+    window.dispatchEvent(new CustomEvent('openStudentLogin'));
+  };
+
+  const handleLogout = () => {
+    // 清空localStorage中的所有用户信息和token
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('student');
+    localStorage.removeItem('teacher');
+    localStorage.removeItem('teacherToken');
+    
+    // 重置状态
+    setIsLoggedIn(false);
+    setProfile(null);
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">加载个人信息中...</p>
+        <p className="text-gray-500">加载中...</p>
+      </div>
+    );
+  }
+
+  // 未登陆时显示登陆页面
+  if (!isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <div className="text-center space-y-6">
+          <div className="flex justify-center">
+            <User size={80} className="text-gray-400" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-gray-900">未登陆</h2>
+            <p className="text-gray-600">请先登陆以查看您的个人中心</p>
+          </div>
+          <button
+            onClick={handleLoginClick}
+            className="inline-flex items-center gap-2 px-8 py-3 bg-purple-900 text-white rounded-lg hover:bg-purple-800 transition-colors font-medium"
+          >
+            <LogIn size={20} />
+            登陆
+          </button>
+        </div>
       </div>
     );
   }
@@ -81,24 +159,43 @@ export function PersonalCenter() {
           {/* User Profile */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={profile.avatar || "https://images.unsplash.com/photo-1514369118554-e20d93546b30?w=150"} />
-                  <AvatarFallback>{profile.name}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="mb-1">{profile.name}</h2>
-                  <div className="space-y-1 text-gray-600">
-                    <p>学号：{profile.studentId}</p>
-                    <p>{profile.college} · {profile.major}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src={profile.avatar || "https://images.unsplash.com/photo-1514369118554-e20d93546b30?w=150"} />
+                    <AvatarFallback>{profile.name}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h2 className="mb-1">{profile.name}</h2>
+                    <div className="space-y-1 text-gray-600">
+                      {profile.userType === 'TEACHER' ? (
+                        <>
+                          <p>工作编号：{profile.username}</p>
+                          <p>{profile.department}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p>学号：{profile.studentId}</p>
+                          <p>{profile.major}</p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <ChevronRight className="text-gray-400" />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="退出登陆"
+                >
+                  <LogOut size={20} />
+                  退出
+                </button>
               </div>
             </CardContent>
           </Card>
 
-          {/* My Courses */}
+          {/* My Courses - 仅为学生显示 */}
+          {profile.userType !== 'TEACHER' && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -119,8 +216,10 @@ export function PersonalCenter() {
               </div>
             </CardContent>
           </Card>
+          )}
 
-          {/* Homework Completion Rate */}
+          {/* Homework Completion Rate - 仅为学生显示 */}
+          {profile.userType !== 'TEACHER' && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -155,8 +254,10 @@ export function PersonalCenter() {
               </div>
             </CardContent>
           </Card>
+          )}
 
-          {/* Exam Scores */}
+          {/* Exam Scores - 仅为学生显示 */}
+          {profile.userType !== 'TEACHER' && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -193,8 +294,10 @@ export function PersonalCenter() {
               </div>
             </CardContent>
           </Card>
+          )}
 
-          {/* Wrong Answer Book */}
+          {/* Wrong Answer Book - 仅为学生显示 */}
+          {profile.userType !== 'TEACHER' && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -224,8 +327,10 @@ export function PersonalCenter() {
               </div>
             </CardContent>
           </Card>
+          )}
 
-          {/* Learning Statistics */}
+          {/* Learning Statistics - 仅为学生显示 */}
+          {profile.userType !== 'TEACHER' && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -261,6 +366,7 @@ export function PersonalCenter() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Other Settings */}
           <Card>

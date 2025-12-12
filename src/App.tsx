@@ -6,12 +6,13 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { PersonalCenter } from './components/PersonalCenter';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminDashboard } from './components/AdminDashboard';
+import { StudentLogin } from './components/StudentLogin';
 import { AISettings } from './components/AISettings';
 import { NetworkDiagnostics } from './components/NetworkDiagnostics';
 import logoImage from 'figma:asset/03edc2d2f6090258e8265fc358ece72f082955b2.png';
 
 type TabType = 'ai' | 'learning' | 'notifications' | 'personal';
-type ViewType = 'student' | 'admin-login' | 'admin-dashboard';
+type ViewType = 'student' | 'admin-login' | 'admin-dashboard' | 'student-login';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('ai');
@@ -25,6 +26,16 @@ export default function App() {
       setTeacher(JSON.parse(teacherData));
       setCurrentView('admin-dashboard');
     }
+
+    // Listen for student login event from PersonalCenter
+    const handleOpenStudentLogin = () => {
+      setCurrentView('student-login');
+    };
+
+    window.addEventListener('openStudentLogin', handleOpenStudentLogin);
+    return () => {
+      window.removeEventListener('openStudentLogin', handleOpenStudentLogin);
+    };
   }, []);
 
   const handleAdminLogin = (teacherData: any) => {
@@ -35,8 +46,18 @@ export default function App() {
   const handleAdminLogout = () => {
     localStorage.removeItem('teacher');
     localStorage.removeItem('teacherToken');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('student');
     setTeacher(null);
     setCurrentView('student');
+  };
+
+  const handleStudentLogin = (studentData: any) => {
+    // 学生登陆后返回到主应用
+    setCurrentView('student');
+    // 发送事件通知其他组件登陆成功，以便刷新数据
+    window.dispatchEvent(new CustomEvent('studentLoginSuccess', { detail: studentData }));
   };
 
   const renderContent = () => {
@@ -73,6 +94,16 @@ export default function App() {
     );
   }
 
+  // Render student login view
+  if (currentView === 'student-login') {
+    return (
+      <StudentLogin 
+        onLoginSuccess={handleStudentLogin}
+        onBack={() => setCurrentView('student')}
+      />
+    );
+  }
+
   return (
     <>
       <AISettings />
@@ -84,12 +115,26 @@ export default function App() {
           <div className="flex items-center gap-3">
             <img src={logoImage} alt="SUAT Logo" className="h-10" />
           </div>
-          <button
-            onClick={() => setCurrentView('admin-login')}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            教师入口 →
-          </button>
+          <div className="flex items-center gap-4">
+            {teacher ? (
+              <>
+                <span className="text-gray-700">{teacher.name} (教师)</span>
+                <button
+                  onClick={handleAdminLogout}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  登出
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setCurrentView('admin-login')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                教师入口
+              </button>
+            )}
+          </div>
         </header>
 
       {/* Main Content */}

@@ -35,7 +35,7 @@ export function LearningCenter() {
           ...course,
           code: course.code || `COURSE${course.id.toUpperCase()}`,
           time: course.time || '周一、周三 8:00-9:40',
-          semester: 'current' as const,
+          semester: (course.semester || 'current') as 'current' | 'history',
           pendingTasks: Math.floor(Math.random() * 3), // 临时随机数据
         }));
         setCourses(enrichedCourses);

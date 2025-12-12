@@ -14,7 +14,7 @@ export const API_CONFIG = {
   
   // 是否启用Mock数据（开发阶段使用）
   // 对接真实后端时，将此值改为 false
-  USE_MOCK_DATA: false,
+  USE_MOCK_DATA: true,
 };
 
 // 通用请求头
@@ -67,6 +67,8 @@ export const API_ENDPOINTS = {
     CHAPTERS: '/courses/:id/chapters',
     HOMEWORK: '/courses/:id/homework',
     SUBMIT_HOMEWORK: '/courses/:courseId/homework/:homeworkId/submit',
+    FILES: '/courses/:courseId/files',
+    FILE_DETAIL: '/courses/files/:fileId',
   },
 
   // 教师管理相关
