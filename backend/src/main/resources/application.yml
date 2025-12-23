@@ -1,0 +1,103 @@
+# =======================================
+# Spring Boot 主配置 (application.yml)
+# =======================================
+
+server:
+  # 应用程序运行端口
+  port: 8080
+  # 强制服务端使用 UTF-8 编码响应，避免客户端出现中文乱码
+  servlet:
+    encoding:
+      enabled: true
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    # 应用程序名称
+    name: suat-gpt-backend
+
+  # ---------------------------------------
+  # 数据库配置 (H2 内存数据库 - 开发环境)
+  # ---------------------------------------
+  datasource:
+    # 使用 H2 内存数据库，数据库名为 suatdb
+    url: jdbc:h2:mem:suatdb
+    driverClassName: org.h2.Driver
+    # H2 默认的用户名和密码
+    username: sa
+    password: password
+
+  # H2 Console 配置（仅用于开发环境调试）
+  h2:
+    console:
+      enabled: true # 启用 H2 控制台
+      path: /h2-console # H2 控制台访问路径
+
+  # ---------------------------------------
+  # JPA/Hibernate 配置
+  # ---------------------------------------
+  jpa:
+    # 指定 H2 数据库方言
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      # DDL 策略：启动时根据实体类更新或创建表结构
+      ddl-auto: update
+      # 在控制台打印执行的 SQL 语句
+      show-sql: true
+
+# ---------------------------------------
+# JWT (JSON Web Token) 配置
+# ---------------------------------------
+jwt:
+  # 签名密钥 (Base64 编码)，用于 Token 的生成和验证。
+  secret: YmFja2VuZC1rZXktZm9yLXN1YXQtZ3B0LXN0cnVjdHVyZS1leGFhbXBsZS1zZWNydC1oZXJlCg==
+  # Token 有效期 (毫秒)，此处为 86400000 毫秒 (24 小时)
+  expiration: 86400000
+
+# ---------------------------------------
+# CORS (跨域资源共享) 配置
+# ---------------------------------------
+cors:
+  # 允许的来源
+  allowed-origins: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
+  # 允许的 HTTP 方法
+  allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+  # 允许的请求头：* 表示允许所有请求头
+  allowed-headers: "*"
+
+# ---------------------------------------
+# 日志配置
+# ---------------------------------------
+logging:
+  level:
+    suatgpt: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ================= AI 服务配置 =================
+ai:
+  # 1. 内网 Qwen 配置 (对应前端: Qwen3-30B(内网))
+  qwen-internal:
+    base-url: http://10.22.18.12:40011/v1
+    api-key: 2c1730a6-6a03-4e36-a885-39593ff99e37
+    model: Qwen3-30B-A3B
+
+  # 2. DeepSeek 配置 (对应前端: DeepSeek-R1)
+  deepseek: 
+    base-url: http://10.22.18.101:9997/v1
+    api-key: sk-vAoZbJylEqxjcSWEboRNifJTAnQMqsjo01BUxJGMBOIy0zjG
+    model: deepseek-r1-0528-w8a8
+
+  # 3. Embedding 配置 (知识库使用)
+  embedding: 
+    base-url: http://10.22.18.12:40012/v1
+    api-key: 3c1730a6-6a03-4e36-a885-39593ff99e38
+    model: Qwen-embedding
+
+  # 4. 公网 Qwen 配置 (对应前端: Qwen Max(公网))
+  # 这里的 API Key 是导致之前报错的原因，我填了一个占位符，防止报错
+  qwen-public:
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api-key: "placeholder-key-to-avoid-startup-error"

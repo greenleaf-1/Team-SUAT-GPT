@@ -1,0 +1,38 @@
+@baseUrl = http://localhost:8080
+
+### 1. 注册新用户 (POST /api/auth/register)
+# 测试 UserRepository 的 save 方法
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+    "username": "mytestuser",
+    "password": "securepassword123"
+}
+
+### 2. 登录并获取 JWT Token (POST /api/auth/login)
+# @name login
+# 测试 UserService 的 loginAndGenerateToken 方法和 JwtUtils
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "mytestuser",
+    "password": "securepassword123"
+}
+
+
+# 使用 @name 来命名响应，方便后续请求引用其内容。
+# 这里假设登录成功响应体中包含 "token" 字段。
+
+### 3. 测试受保护的 AI 接口 (POST /api/ai/chat)
+# 使用动态变量 {{login.response.body.token}} 自动注入 JWT Token
+@token = {{login.response.body.token}}
+
+POST {{baseUrl}}/api/ai/chat
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "Hello, what is the best way to integrate Gemini API?"
+}
