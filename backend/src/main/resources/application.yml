@@ -78,15 +78,21 @@ logging:
 
 # ================= AI 服务配置 =================
 ai:
+#  # 1. 内网 Qwen 配置 (对应前端: Qwen3-30B(内网))
+#  qwen-internal:
+#    base-url: http://10.22.18.12:40011/v1
+#    api-key: 2c1730a6-6a03-4e36-a885-39593ff99e37
+#    model: Qwen3-30B-A3B
+
   # 1. 内网 Qwen 配置 (对应前端: Qwen3-30B(内网))
   qwen-internal:
-    base-url: http://10.22.18.12:40011/v1
-    api-key: 2c1730a6-6a03-4e36-a885-39593ff99e37
-    model: Qwen3-30B-A3B
+    base-url: /api/v1
+    api-key: sk-lE_y8rXBstdEmImQrw4eeGjCcOTm9VCmLBnyXkXqcqFrM3_m
+    model: WeKnora
 
   # 2. DeepSeek 配置 (对应前端: DeepSeek-R1)
   deepseek: 
-    base-url: http://10.22.18.101:9997/v1
+    base-url: http://10.22.18.101:9997/v1 
     api-key: sk-vAoZbJylEqxjcSWEboRNifJTAnQMqsjo01BUxJGMBOIy0zjG
     model: deepseek-r1-0528-w8a8
 
