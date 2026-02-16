@@ -5,198 +5,128 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter; // 新增 Import
-
-import suatgpt.backend.model.ChatMessage;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import suatgpt.backend.model.ChatSession;
+import suatgpt.backend.model.User;
+import suatgpt.backend.repository.ChatMessageRepository;
+import suatgpt.backend.repository.ChatSessionRepository;
 import suatgpt.backend.repository.UserRepository;
 import suatgpt.backend.service.AiService;
-import suatgpt.backend.model.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.Socket;
-import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * AI 交互控制器
- * 负责处理与 AI 聊天、获取历史记录等操作的 API 路由。
- */
 @RestController
 @RequestMapping("/api/ai")
+@CrossOrigin // 处理跨域请求
 public class AiController {
 
     private final AiService aiService;
     private final UserRepository userRepository;
+    private final ChatSessionRepository sessionRepository;
+    private final ChatMessageRepository messageRepository;
 
-    public AiController(AiService aiService, UserRepository userRepository) {
+    public AiController(AiService aiService,
+                        UserRepository userRepository,
+                        ChatSessionRepository sessionRepository,
+                        ChatMessageRepository messageRepository) {
         this.aiService = aiService;
         this.userRepository = userRepository;
+        this.sessionRepository = sessionRepository;
+        this.messageRepository = messageRepository;
     }
 
-    // --- DTOs (Data Transfer Objects) ---
+    // 定义请求与响应数据结构
+    public record ChatRequest(String message, String modelKey, Long sessionId) {}
+    public record CreateSessionRequest(String title) {}
+    public record SessionResponse(Long id, String title, LocalDateTime createdAt) {}
+    public record MessageResponse(String sender, String content, LocalDateTime timestamp) {}
 
     /**
-     * 聊天请求体 (DTO): 接收用户发送的消息内容 和 选择的模型键。
+     * 获取会话列表
      */
-    record ChatRequest(String message, String modelKey) {}
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionResponse>> getSessions(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = getUser(userDetails);
+        List<SessionResponse> sessions = sessionRepository.findByUserOrderByCreatedAtDesc(user).stream()
+                .map(s -> new SessionResponse(s.getId(), s.getTitle(), s.getCreatedAt()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(sessions);
+    }
 
     /**
-     * 聊天消息响应体 (DTO): 用于向客户端发送聊天消息的简化结构。
+     * 创建新会话
      */
-    record MessageResponse(String sender, String content, LocalDateTime timestamp) {}
-
-    // --- API Endpoints ---
+    @PostMapping("/sessions")
+    public ResponseEntity<SessionResponse> createSession(@AuthenticationPrincipal UserDetails userDetails, @RequestBody CreateSessionRequest body) {
+        User user = getUser(userDetails);
+        ChatSession session = new ChatSession(user, body.title());
+        ChatSession saved = sessionRepository.save(session);
+        return ResponseEntity.ok(new SessionResponse(saved.getId(), saved.getTitle(), saved.getCreatedAt()));
+    }
 
     /**
-     * [NEW] 流式聊天接口
-     * 前端通过 fetch + ReadableStream 调用此接口，实现打字机效果。
+     * 获取历史消息记录
+     */
+    @GetMapping("/history/{sessionId}")
+    public ResponseEntity<List<MessageResponse>> getSessionHistory(@PathVariable Long sessionId) {
+        List<MessageResponse> messages = messageRepository.findBySessionIdOrderByTimestampAsc(sessionId).stream()
+                .map(m -> new MessageResponse(m.getSender(), m.getContent(), m.getTimestamp()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 核心流式对话端点
+     * 路由逻辑已下沉至 aiService.streamProcessWithSession
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamChat(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody ChatRequest request) {
-
-        // 1. 设置超时时间 (3分钟，防止深度思考模型超时)
-        SseEmitter emitter = new SseEmitter(3 * 60 * 1000L);
-
-        // 2. 获取用户 (复用之前的逻辑)
+    public SseEmitter streamChat(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ChatRequest request) {
+        // 设置超时为 10 分钟，以应对长文档 RAG 的潜在延迟
+        SseEmitter emitter = new SseEmitter(600000L);
         User user = getUser(userDetails);
 
-        // 3. 校验输入
-        if (request.message() == null || request.message().trim().isEmpty()) {
-            try {
-                emitter.send("消息内容不能为空");
-                emitter.complete();
-            } catch (Exception e) { }
-            return emitter;
-        }
-
-        // 4. 开始流式处理 (调用 AiService 的新方法)
         try {
-            // 注意：请确保你的 AiService 已经添加了 streamProcessUserMessage 方法
-            aiService.streamProcessUserMessage(user.getId(), request.message(), request.modelKey(), emitter);
+            // 调用重写后的 AiService，传入 modelKey（涵盖七个模型分支）
+            aiService.streamProcessWithSession(
+                    user,
+                    request.sessionId(),
+                    request.message(),
+                    request.modelKey(), // 对应 application.yml 中的 7 个 key
+                    emitter
+            );
         } catch (Exception e) {
             emitter.completeWithError(e);
         }
-
         return emitter;
     }
 
     /**
-     * [保留] 普通聊天接口 (非流式)
-     * 发送新消息并获取 AI 响应 (等待全部生成完才返回)
+     * 新增：文件上传同步端点
+     * 将文件推送到 AnythingLLM 进行向量化处理
      */
-    @PostMapping("/chat")
-    public ResponseEntity<MessageResponse> chat(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody ChatRequest request) {
-        
-        if (request.message() == null || request.message().trim().isEmpty()) {
-             return ResponseEntity.badRequest().body(new MessageResponse("AI", "消息内容不能为空。", LocalDateTime.now()));
-        }
-        
-        User user = getUser(userDetails);
-
-        // 调用 AiService 处理用户消息
-        String aiResponse = aiService.processUserMessage(user.getId(), request.message(), request.modelKey());
-
-        return ResponseEntity.ok(new MessageResponse("AI", aiResponse, LocalDateTime.now()));
-    }
-
-    /**
-     * 获取聊天历史记录
-     */
-    @GetMapping("/history")
-    public ResponseEntity<List<MessageResponse>> getHistory(@AuthenticationPrincipal UserDetails userDetails) {
-        
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
-
-        List<ChatMessage> history = aiService.getChatHistory(user.getId());
-
-        List<MessageResponse> response = history.stream()
-                .map(msg -> new MessageResponse(msg.getSender(), msg.getContent(), msg.getTimestamp()))
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 测试与指定 AI 模型的网络连通性
-     */
-    @GetMapping("/test")
-    public ResponseEntity<?> testAiConnection(@RequestParam(required = false, defaultValue = "qwen-public") String modelKey) {
-        String baseUrl;
-        switch (modelKey) {
-            case "qwen-internal":
-                baseUrl = aiService.qwenInternalBaseUrl();
-                break;
-            case "deepseek":
-                baseUrl = aiService.deepseekBaseUrl();
-                break;
-            case "qwen-public":
-            default:
-                baseUrl = aiService.qwenPublicBaseUrl();
-                break;
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "文件不能为空"));
         }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("modelKey", modelKey);
-        result.put("baseUrl", baseUrl);
+        // 这里的上传逻辑依赖于 AiService 中对 anything-llm 的配置注入
+        boolean success = aiService.uploadAndEmbed(file);
 
-        try {
-            URI uri = new URI(baseUrl);
-            String host = uri.getHost();
-            int port = uri.getPort() == -1 ? ("https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80) : uri.getPort();
-            result.put("host", host);
-            result.put("port", port);
-
-            InetAddress[] addrs = InetAddress.getAllByName(host);
-            String[] ips = new String[addrs.length];
-            for (int i = 0; i < addrs.length; i++) ips[i] = addrs[i].getHostAddress();
-            result.put("dnsResolved", true);
-            result.put("ips", ips);
-
-            try (Socket socket = new Socket()) {
-                socket.connect(new InetSocketAddress(host, port), 5000);
-                result.put("tcpConnect", true);
-            } catch (Exception e) {
-                result.put("tcpConnect", false);
-                result.put("tcpError", e.getMessage());
-            }
-
-            return ResponseEntity.ok(result);
-        } catch (Exception ex) {
-            result.put("dnsResolved", false);
-            result.put("error", ex.getMessage());
-            return ResponseEntity.status(500).body(result);
-        }
-    }
-
-    // --- 辅助方法 ---
-
-    /**
-     * 提取获取用户逻辑，避免重复代码
-     */
-    private User getUser(UserDetails userDetails) {
-        if (userDetails != null) {
-            return userRepository.findByUsername(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
+        if (success) {
+            return ResponseEntity.ok(Map.of("message", "文件已同步至 SUAT 知识库，模型现在已获得该文档背景"));
         } else {
-            // 未登录：查找或创建一个匿名用户
-            String anonUsername = "anonymous";
-            return userRepository.findByUsername(anonUsername).orElseGet(() -> {
-                User u = new User();
-                u.setUsername(anonUsername);
-                u.setPassword(anonUsername + "-nopass");
-                u.setRole("ANONYMOUS");
-                return userRepository.save(u);
-            });
+            // 失败通常是由于后端 API 连接不通或内存溢出
+            return ResponseEntity.status(500).body(Map.of("message", "同步失败，请检查服务器 AnythingLLM 服务状态"));
         }
+    }
+
+    private User getUser(UserDetails userDetails) {
+        return userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

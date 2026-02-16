@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import suatgpt.backend.utils.JwtUtils;
+import jakarta.servlet.DispatcherType;
 
 import java.io.IOException;
 
@@ -46,6 +47,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        if (DispatcherType.ASYNC.equals(request.getDispatcherType())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         // 1. 尝试从请求头中获取 Authorization 字段的值
         final String header = request.getHeader("Authorization");
 

@@ -16,35 +16,42 @@ spring:
   application:
     # 应用程序名称
     name: suat-gpt-backend
-
+  # ---------------------------------------
+  # 邮件服务配置 (Agent 发作业使用)
+  # ---------------------------------------
+  mail:
+    host: smtp.qq.com       # 如果用QQ邮箱，保持不变
+    port: 587               # 端口号
+    username: 你的邮箱@qq.com
+    password: 你的授权码     # 注意：是邮箱设置里生成的16位授权码，不是登录密码
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   # ---------------------------------------
   # 数据库配置 (H2 内存数据库 - 开发环境)
   # ---------------------------------------
   datasource:
-    # 使用 H2 内存数据库，数据库名为 suatdb
-    url: jdbc:h2:mem:suatdb
-    driverClassName: org.h2.Driver
-    # H2 默认的用户名和密码
+    # 关键修改：从 mem 改为 file 模式
+    # suatgpt 是数据库文件名，它会生成在项目根目录下
+    url: jdbc:h2:file:./data/suatgpt;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+    driver-class-name: org.h2.Driver
     username: sa
-    password: password
+    password:
+  jpa:
+    hibernate:
+      # 调试期可以用 update，它会保留数据并更新表结构
+      # 千万别用 create 或 create-drop，那也会导致重启清空
+      ddl-auto: update
+    show-sql: true
 
   # H2 Console 配置（仅用于开发环境调试）
   h2:
     console:
       enabled: true # 启用 H2 控制台
       path: /h2-console # H2 控制台访问路径
-
-  # ---------------------------------------
-  # JPA/Hibernate 配置
-  # ---------------------------------------
-  jpa:
-    # 指定 H2 数据库方言
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      # DDL 策略：启动时根据实体类更新或创建表结构
-      ddl-auto: update
-      # 在控制台打印执行的 SQL 语句
-      show-sql: true
 
 # ---------------------------------------
 # JWT (JSON Web Token) 配置
@@ -78,30 +85,49 @@ logging:
 
 # ================= AI 服务配置 =================
 ai:
-  # 1. 内网 Qwen 配置 (对应前端: Qwen3-30B(内网))
+  # 1. AnythingLLM (OpenAI 兼容模式)
+  anything-llm:
+    base-url: http://8.153.206.179:3001/api/v1/openai
+    api-key: XBFXZHA-2TJ40GQ-GKAS881-DJADW75
+    workspace-slug: suat
+
+  # 2. 内网 Qwen
   qwen-internal:
     base-url: http://10.22.18.12:40011/v1
     api-key: 2c1730a6-6a03-4e36-a885-39593ff99e37
     model: Qwen3-30B-A3B
 
-  # 2. DeepSeek 配置 (对应前端: DeepSeek-R1)
-  deepseek: 
+  # 3. 内网 DeepSeek
+  deepseek-internal:
     base-url: http://10.22.18.101:9997/v1
     api-key: sk-vAoZbJylEqxjcSWEboRNifJTAnQMqsjo01BUxJGMBOIy0zjG
     model: deepseek-r1-0528-w8a8
 
-  # 3. Embedding 配置 (知识库使用)
-  embedding: 
+  # 4. Embedding 配置 (云端分片使用)
+  embedding:
     base-url: http://10.22.18.12:40012/v1
     api-key: 3c1730a6-6a03-4e36-a885-39593ff99e38
     model: Qwen-embedding
 
-  # 4. 公网 Qwen 配置 (对应前端: Qwen Max(公网))
+  # 5. 公网 Qwen (DashScope)
   qwen-public:
     base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
     api-key: sk-56dbfe08b2124f9791240183bc1b236e
 
-  # 5. 公网 DeepSeek 配置 (对应前端: DeepSeek(公网))
+  # 6. 公网 DeepSeek
   deepseek-public:
     base-url: https://api.deepseek.com
     api-key: sk-4815d4f03b24410d88239af4af478e0a
+
+  # 7. 备用/自定义 DeepSeek (如 WeKnora 模式)
+#  deepseek:
+#    base-url: http://8.153.206.179:8001/api/v1
+#    api-key: sk-lE_y8rXBstdEmImQrw4eeGjCcOTm9VCmLBnyXkXqcqFrM3_m
+#    model: WeKnora
+  deepseek:
+    base-url: http://8.153.206.179:8001/api/v1
+    api-key: sk-PnleJv1jLp0rtZyoEtz3eXmM2fskQ3cpdZ0NLhZlwG5nkvd3
+    # 填入之前 curl 成功的那个长 ID，不要填 suat
+    weknora-session-id: d33e7ac1-9e1a-4b57-9274-f54708867126
+    # 填入学生工作知识库 ID
+    weknora-kb-id: d54d1559-f271-46a1-a222-ba2f8cdc8cab
