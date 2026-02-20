@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>名师网AI制课系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        /* 100% 继承你提供的样式 */
+        body { margin: 0; font-family: 'PingFang SC', sans-serif; background: #f0f2f5; }
+        .app-container { display: flex; height: 100vh; }
+        .sidebar { width: 240px; background: #fff; border-right: 1px solid #dcdfe6; display: flex; flex-direction: column; }
+        .logo { padding: 25px; font-size: 22px; font-weight: bold; color: #409EFF; border-bottom: 1px solid #f2f6fc; }
+        .main-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .header { height: 60px; background: #fff; display: flex; align-items: center; justify-content: flex-end; padding: 0 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .workspace { padding: 30px 40px; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; }
+        .step-nav { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .content-card { background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .radar-chart { width: 100%; height: 380px; }
+        .history-item { padding: 10px 20px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 14px; }
+        .history-item:hover { background: #f5f7fa; }
+        /* 选中状态的视觉反馈 [cite: 2026-02-19] */
+        .style-card { 
+            border: 2px solid #f2f6fc; 
+            border-radius: 8px; 
+            padding: 40px 20px; 
+            cursor: pointer; 
+            text-align: center; 
+            transition: all 0.3s; 
+            background: #fff;
+        }
+        .style-card:hover { border-color: #409EFF; }
+        .style-card.selected { 
+            border-color: #409EFF; 
+            background: #ecf5ff; 
+            box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2); 
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container">
+        <aside class="sidebar">
+            <div class="logo">名师网AI制课系统</div>
+            <div style="padding: 10px 20px;">
+                <el-button type="primary" icon="Plus" @click="createNewProject" style="width: 100%; border-radius: 8px;">新建萃取课题</el-button>
+            </div>
+            <div style="padding: 15px 25px; font-weight: bold; color: #909399;">历史萃取记录</div>
+            <div class="history-list" style="flex:1; overflow-y:auto;">
+                <div v-for="h in realHistory" :key="h" class="history-item" @click="loadFromHistory(h)">📄 {{ h }}</div>
+            </div>
+            <div style="padding: 20px; font-size: 12px; color: #C0C4CC;">David，保持农夫精神</div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <el-button v-if="step > 1" @click="goBack" size="small" style="margin-right: auto;">← 撤销并返回上一步</el-button>
+                <span style="color:#E6A23C; margin-right:20px; font-weight:bold;">🪙 450</span>
+                <el-button type="primary" round size="small">积分充值</el-button>
+            </header>
+
+            <div class="workspace">
+                <div v-if="step === 0 && !loading" style="text-align:center; margin-top:15vh;">
+                    <h1 style="font-size:42px; color:#303133;">AI 工业化萃取智能体</h1>
+                    <p style="color:#909399;">基于《讲师训练学院》标准，实现经验的高效转化</p>
+                    <div style="width:600px; margin:40px auto;">
+                        <el-input v-model="topic" placeholder="输入课题名称" size="large">
+                            <template #append><el-button type="primary" @click="runWorkflow(1)">开启定位</el-button></template>
+                        </el-input>
+                        <el-upload drag :action="`${API_BASE}/api/course/upload-experience`" :on-success="handleUploadSuccess">
+                            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                            <div class="el-upload__text">将文稿拖到此处，或<em>点击上传</em></div>
+                        </el-upload>
+                    </div>
+                </div>
+
+                <div v-if="step > 0" class="step-nav">
+                    <el-steps :active="step - 1" finish-status="success" align-center>
+                        <el-step v-for="(s, i) in stepNames" :key="s" :title="s" @click.native="jumpToPage(i+1)" style="cursor:pointer"></el-step>
+                    </el-steps>
+                </div>
+
+                <div v-if="step === 1 && !loading" class="content-card">
+                    <el-row :gutter="40">
+                        <el-col :span="10"><div id="radarDom" class="radar-chart"></div></el-col>
+                        <el-col :span="14">
+                            <h3>课程定位评估报告</h3>
+                            <div style="background:#f8fbff; padding:20px; border-radius:8px;" v-html="workflowHistory[1]?.analysis"></div>
+                            <el-button type="primary" style="width:100%; margin-top:25px;" @click="runWorkflow(2)">下一步：需求分析</el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+
+                <div v-if="step === 2 && !loading" class="content-card">
+                    <h3>典型业务场景与需求溯源</h3>
+                    <el-table :data="workflowHistory[2]?.items" border stripe>
+                        <el-table-column prop="scene" label="实战场景"></el-table-column>
+                        <el-table-column prop="problem" label="核心痛点"></el-table-column>
+                        <el-table-column prop="goal" label="教学目标"></el-table-column>
+                    </el-table>
+                    <el-button type="primary" style="width:100%; margin-top:20px;" @click="runWorkflow(3)">下一步：课程结构</el-button>
+                </div>
+
+                <div v-if="step === 3 && !loading" class="content-card">
+                    <h3>四级结构建模 (Why-What-How-If only)</h3>
+                    <div v-for="(ch, i) in workflowHistory[3]?.chapters" :key="i" style="margin-bottom:20px;">
+                        <h4 style="color:#409EFF;">第 {{i+1}} 章：{{ ch.title }}</h4>
+                        <el-card shadow="never" body-style="padding:10px 20px;">
+                            <div v-for="sec in ch.sections" :key="sec" style="padding:8px 0; border-bottom:1px solid #f2f6fc;">{{ sec }}</div>
+                        </el-card>
+                    </div>
+                    <el-button type="primary" style="width:100%;" @click="runWorkflow(4)">下一步：课程案例</el-button>
+                </div>
+
+                <div v-if="step === 4 && !loading" class="content-card">
+                    <h3>实证案例萃取</h3>
+                    <el-row :gutter="20">
+                        <el-col :span="12" v-for="c in workflowHistory[4]?.cases" :key="c.content">
+                            <el-card shadow="hover" :body-style="{ background: c.type === '正向' ? '#f0f9eb' : '#fef0f0' }">
+                                <el-tag :type="c.type === '正向' ? 'success' : 'danger'">{{ c.type }}案例</el-tag>
+                                <p style="margin-top:10px;">{{ c.content }}</p>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                    <el-button type="primary" style="width:100%; margin-top:20px;" @click="jumpToPage(5)">进入下一步：课程美化</el-button>
+                </div>
+
+                <div class="workspace">
+                    <div v-if="step === 5" class="content-card">
+                        <h3>课程美化与心智包装</h3>
+                        <p style="color:#909399; margin-bottom:25px;">David，请点击选择或重新切换课程风格：</p>
+                        <el-row :gutter="20" style="margin-bottom:30px;">
+                            <el-col :span="8" v-for="s in ['实战型', '学术型', '标题党']" :key="s">
+                                <div :class="['style-card', { 'selected': selStyle === s }]" @click="selStyle = s">
+                                    <el-icon style="font-size:30px;"><Brush /></el-icon>
+                                    <h4>{{ s }}</h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <el-button type="primary" style="width:100%; height:50px;" @click="runAI(5)">确认风格并生成命名建议</el-button>
+                        
+                        <div v-if="workflowHistory[5]" style="margin-top:30px;">
+                            <el-divider>AI 建议名称</el-divider>
+                            <el-alert v-for="n in workflowHistory[5].names" :key="n.name" :title="n.name" :description="n.reason" type="info" show-icon style="margin-bottom:10px;"></el-alert>
+                            <el-button type="success" plain style="width:100%; margin-top:20px;" @click="runAI(6)">确定并进入：学员手册萃取</el-button>
+                        </div>
+                    </div>
+
+                    <div v-if="step === 6" class="content-card">
+                        <h3>学员手册 (PPT 视觉排布)</h3>
+                        <el-table :data="workflowHistory[6]?.slides" border stripe style="margin-bottom:25px;">
+                            <el-table-column label="页码" type="index" width="60"></el-table-column>
+                            <el-table-column prop="title" label="标题" width="180"></el-table-column>
+                            <el-table-column prop="visual" label="视觉配图/逻辑描述"></el-table-column>
+                            <el-table-column prop="time" label="时长(min)" width="100"></el-table-column>
+                        </el-table>
+                        
+                        <div style="display: flex; gap: 15px;">
+                            <el-button type="warning" icon="Download" @click="exportPPT" style="flex: 1; height: 50px;">下载专业 PPTX</el-button>
+                            <el-button type="primary" @click="runAI(7)" style="flex: 2; height: 50px;">确认结构，生成讲师手册</el-button>
+                        </div>
+                    </div>
+
+                    <div v-if="step === 7" class="content-card">
+                        <h3>教学指引与讲师手册</h3>
+                        <el-tabs type="border-card" v-if="workflowHistory[7]">
+                            <el-tab-pane label="🎙 试讲脚本">
+                                <div style="white-space: pre-wrap; line-height:1.8; padding:15px;">{{ workflowHistory[7].script }}</div>
+                            </el-tab-pane>
+                            <el-tab-pane label="💬 互动与练习">
+                                <el-timeline style="padding:20px;">
+                                    <el-timeline-item v-for="it in workflowHistory[7].interacts" :key="it" type="primary">{{ it }}</el-timeline-item>
+                                </el-timeline>
+                            </el-tab-pane>
+                        </el-tabs>
+                        <el-button type="success" style="width:100%; margin-top:30px;" @click="createNewProject">完成本次萃取，回到首页</el-button>
+                    </div>
+                </div>
+
+                <div v-if="loading" style="text-align:center; padding:100px 0;">
+                    <el-icon class="is-loading" style="font-size: 50px; color:#409EFF;"><Loading /></el-icon>
+                    <h2>AI 正在为您萃取：{{ currentTaskName }}</h2>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, nextTick, onMounted } = Vue;
+        // 注意：确保浏览器已经加载了 @element-plus/icons-vue
+        const app = createApp({
+            setup() {
+                const serverIP = window.location.hostname; 
+                const API_BASE = `http://${serverIP}:8080`;
+                const PPT_SERVICE = `http://${serverIP}:3001`;
+                const step = ref(0);
+                const topic = ref('');
+                const loading = ref(false);
+                const selStyle = ref('实战型'); 
+                const realHistory = ref([]);
+                const workflowHistory = reactive({});
+                const currentTaskName = ref('');
+                const stepNames = ['课程定位', '需求分析', '课程结构', '课程案例', '课程美化', '学员手册', '讲师手册'];
+
+                // 1. 物理加载
+                const syncFromPhysical = async (name, targetStep) => {
+                    loading.value = true;
+                    try {
+                        const res = await axios.get(`${API_BASE}/api/course/load-full-project?topic=${encodeURIComponent(name)}`);
+                        Object.keys(workflowHistory).forEach(k => delete workflowHistory[k]);
+                        Object.assign(workflowHistory, res.data);
+                        topic.value = name;
+                        step.value = targetStep || (Object.keys(res.data).length > 0 ? Math.max(...Object.keys(res.data).map(Number)) : 1);
+                        if(step.value === 1 && workflowHistory[1]) {
+                            nextTick(() => initRadar(workflowHistory[1].metrics));
+                        }
+                    } finally { loading.value = false; }
+                };
+
+                // ✅ 统一函数名：HTML 中调用的是 runAI，这里就定义 runAI
+                const runAI = async (target) => {
+                    loading.value = true;
+                    try {
+                        const res = await axios.post(`${API_BASE}/api/course/process`, {
+                            step: target,
+                            topic: topic.value,
+                            selectedStyle: selStyle.value,
+                            history: JSON.stringify(workflowHistory) // ✅ 确保传递了之前的全部萃取成果
+                        });
+                        
+                        // 物理存档写入 [cite: 2026-02-19]
+                        workflowHistory[target] = res.data;
+                        
+                        // 💡 修正：生成哪一步，就停留在哪一步，让用户看到结果！
+                        window.location.hash = `#/course/${encodeURIComponent(topic.value)}/${target}`;
+                        
+                        ElementPlus.ElMessage.success(`${stepNames[target-1]} 萃取成功`);
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('AI 萃取失败，请检查物理存档 logs 文件夹');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const navigateToStep = (s) => {
+                    window.location.hash = `#/course/${encodeURIComponent(topic.value)}/${s}`;
+                };
+
+                const jumpToPage = (s) => {
+                    if (workflowHistory[s] || s === 1 || s === 5) navigateToStep(s);
+                    else ElementPlus.ElMessage.warning('请按顺序完成萃取');
+                };
+
+                const initRadar = (m) => {
+                    const dom = document.getElementById('radarDom');
+                    if (!dom || !m) return;
+                    echarts.dispose(dom);
+                    const chart = echarts.init(dom);
+                    chart.setOption({
+                        radar: { indicator: [{name:'稀缺',max:25},{name:'实用',max:25},{name:'鲜活',max:25},{name:'颗粒',max:25}] },
+                        series: [{ type:'radar', data:[{value:[m.rarity, m.utility, m.freshness, m.granularity]}] }]
+                    });
+                };
+
+                const handleRoute = () => {
+                    const h = window.location.hash;
+                    if (h.startsWith('#/course/')) {
+                        const parts = h.replace('#/course/', '').split('/');
+                        syncFromPhysical(decodeURIComponent(parts[0]), parts[1] ? parseInt(parts[1]) : 1);
+                    } else {
+                        step.value = 0; topic.value = '';
+                    }
+                };
+
+                const fetchFiles = async () => {
+                    const res = await axios.get(`${API_BASE}/api/course/list-files`);
+                    realHistory.value = res.data;
+                };
+
+                window.addEventListener('hashchange', handleRoute);
+                onMounted(() => { fetchFiles(); handleRoute(); });
+
+                // 地址：ai-course.html -> setup() 内部 [cite: 2026-02-20]
+                const exportPPT = async () => {
+                    // 审计：检查是否有生成过学员手册 [cite: 2026-02-19]
+                    const mdSource = workflowHistory[6]?.markdown; 
+                    if (!mdSource) return ElementPlus.ElMessage.warning('请先完成学员手册生成');
+
+                    try {
+                        ElementPlus.ElMessage.info('PPT 物理转换中...');
+                        // 对接你要求的 3000 端口服务
+                        const response = await axios.post(`${PPT_SERVICE}/api/export-pptx`, {
+                            markdown: mdSource,
+                            fileName: topic.value
+                        }, { responseType: 'blob' });
+
+                        const url = window.URL.createObjectURL(new Blob([response.data]));
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `${topic.value}.pptx`;
+                        link.click();
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('导出失败，请确认 3001 端口转码服务已启动');
+                    }
+                };
+
+                return {
+                    step, topic, loading, selStyle, realHistory, workflowHistory, 
+                    exportPPT,
+                    stepNames, currentTaskName, 
+                    runAI, // ✅ 这里的名字必须和 HTML 模板里的 @click="runAI" 一致
+                    runWorkflow: runAI, // 保留别名防止其他地方调用
+                    navigateToStep, jumpToPage,
+                    loadFromHistory: (h) => window.location.hash = `#/course/${encodeURIComponent(h)}/1`,
+                    createNewProject: () => window.location.hash = '#/',
+                    handleUploadSuccess: (res) => { topic.value = res.topic; runAI(1); },
+                    API_BASE
+                };
+            }
+        });
+
+        // ✅ 注册图标库，否则页面可能卡死
+        if (typeof ElementPlusIconsVue !== 'undefined') {
+            for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+                app.component(key, component);
+            }
+        }
+        app.use(ElementPlus).mount('#app');
+    </script>
+</body>
+</html>

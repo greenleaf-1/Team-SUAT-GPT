@@ -71,27 +71,21 @@ public class WebSecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-                    config.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
-                    config.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
+                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 明确列出方法
+                    config.setAllowedHeaders(Collections.singletonList("*"));
                     config.setAllowCredentials(true);
                     return config;
                 }))
-                // 关键点 1：保持 Stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 关键点 2：极其重要！必须允许 ASYNC 类型的请求，否则 SSE 必定断开
-                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
-
-                        // 关键点 3：暂时彻底放开 ai 接口，等出字了再加固
-                        .requestMatchers("/api/ai/**").permitAll()
-
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() // ✅ 允许 ERROR 类型
+                        .requestMatchers("/api/auth/**", "/h2-console/**", "/error").permitAll() // ✅ 显式放行 /error
+                        .requestMatchers("/api/course/**", "/api/ai/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // 关键点 4：这行也非常重要，防止异步请求在内部派发时被拦截
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
+
+        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
     }

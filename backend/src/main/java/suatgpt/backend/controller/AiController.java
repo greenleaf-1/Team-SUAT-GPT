@@ -81,21 +81,44 @@ public class AiController {
 
     /**
      * 核心流式对话端点
-     * 路由逻辑已下沉至 aiService.streamProcessWithSession
+     * 已加入原生 IO 存档逻辑，确保数据永久化
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamChat(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ChatRequest request) {
-        // 设置超时为 10 分钟，以应对长文档 RAG 的潜在延迟
+        // 设置超时为 10 分钟
         SseEmitter emitter = new SseEmitter(600000L);
         User user = getUser(userDetails);
 
+        // --- 极简本地存档逻辑开始 ---
+        // 地址：backend/src/main/java/suatgpt/backend/controller/AiController.java
         try {
-            // 调用重写后的 AiService，传入 modelKey（涵盖七个模型分支）
+            // 使用当前系统目录，确保在 Linux 服务器上也能准确创建
+            String logDir = System.getProperty("user.dir") + java.io.File.separator + "logs";
+            java.nio.file.Path logPath = java.nio.file.Paths.get(logDir, "extraction_history.log");
+
+            // 自动创建文件夹，防止服务器权限或目录不存在导致报错
+            java.nio.file.Files.createDirectories(logPath.getParent());
+
+            String logInfo = String.format("[%s] 用户: %s | 会话ID: %s | 课题: %s%n",
+                    LocalDateTime.now(), user.getUsername(), request.sessionId(), request.message());
+
+            java.nio.file.Files.write(
+                    logPath,
+                    logInfo.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.APPEND
+            );
+        } catch (Exception e) {
+            System.err.println("服务器存档失败: " + e.getMessage());
+        }
+        // --- 极简本地存档逻辑结束 ---
+
+        try {
             aiService.streamProcessWithSession(
                     user,
                     request.sessionId(),
                     request.message(),
-                    request.modelKey(), // 对应 application.yml 中的 7 个 key
+                    request.modelKey(),
                     emitter
             );
         } catch (Exception e) {
@@ -105,8 +128,27 @@ public class AiController {
     }
 
     /**
+     * 新增：读取本地存档记录
+     * 地址：backend/src/main/java/suatgpt/backend/controller/AiController.java
+     */
+    @GetMapping("/extraction-history")
+    public ResponseEntity<List<String>> getExtractionHistory() {
+        try {
+            java.nio.file.Path logPath = java.nio.file.Paths.get(System.getProperty("user.dir"), "logs", "extraction_history.log");
+            if (!java.nio.file.Files.exists(logPath)) {
+                return ResponseEntity.ok(List.of("暂无存档记录"));
+            }
+            // 读取最后 50 行记录，防止文件过大导致内存溢出
+            List<String> allLines = java.nio.file.Files.readAllLines(logPath);
+            int start = Math.max(0, allLines.size() - 50);
+            return ResponseEntity.ok(allLines.subList(start, allLines.size()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(List.of("读取存档失败: " + e.getMessage()));
+        }
+    }
+
+    /**
      * 新增：文件上传同步端点
-     * 将文件推送到 AnythingLLM 进行向量化处理
      */
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
@@ -114,13 +156,11 @@ public class AiController {
             return ResponseEntity.badRequest().body(Map.of("message", "文件不能为空"));
         }
 
-        // 这里的上传逻辑依赖于 AiService 中对 anything-llm 的配置注入
         boolean success = aiService.uploadAndEmbed(file);
 
         if (success) {
             return ResponseEntity.ok(Map.of("message", "文件已同步至 SUAT 知识库，模型现在已获得该文档背景"));
         } else {
-            // 失败通常是由于后端 API 连接不通或内存溢出
             return ResponseEntity.status(500).body(Map.of("message", "同步失败，请检查服务器 AnythingLLM 服务状态"));
         }
     }

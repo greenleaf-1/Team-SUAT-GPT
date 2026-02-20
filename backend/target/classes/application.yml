@@ -19,17 +19,18 @@ spring:
   # ---------------------------------------
   # 邮件服务配置 (Agent 发作业使用)
   # ---------------------------------------
+
   mail:
-    host: smtp.qq.com       # 如果用QQ邮箱，保持不变
-    port: 587               # 端口号
-    username: 你的邮箱@qq.com
-    password: 你的授权码     # 注意：是邮箱设置里生成的16位授权码，不是登录密码
+    host: smtp.exmail.qq.com
+    port: 465
+    username: SUAT24000137@stu.suat-sz.edu.cn
+    password: 7vxcMAFpianCVWZT  # 已填入你刚拿到的授权码
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
-            enable: true
+          ssl:
+            enable: true # 端口 465 必须强制 SSL
   # ---------------------------------------
   # 数据库配置 (H2 内存数据库 - 开发环境)
   # ---------------------------------------
@@ -84,6 +85,13 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 # ================= AI 服务配置 =================
+telegram:
+  bot:
+    token: 8307413700:AAGt_RSwstRuDOSHqgFUn7mov-wN6pstTtc
+    username: SUAT_Course_Agent_Bot # 请确保与 BotFather 处设置的一致
+
+
+
 ai:
   # 1. AnythingLLM (OpenAI 兼容模式)
   anything-llm:
@@ -131,3 +139,14 @@ ai:
     weknora-session-id: d33e7ac1-9e1a-4b57-9274-f54708867126
     # 填入学生工作知识库 ID
     weknora-kb-id: d54d1559-f271-46a1-a222-ba2f8cdc8cab
+
+# ================= 代理配置 (新增) =================
+proxy:
+  enabled: true
+  host: 127.0.0.1
+  # 🛑 重点：请核对你的 VPN 软件显示的 "HTTP Port" 或 "端口"
+  port: 7897
+
+# 在 application.yml 中添加
+storage:
+  path: ${LOG_PATH:/data/suat-gpt/logs/}
