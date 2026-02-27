@@ -4,30 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b80ac018-8470-4c71-931c-e49b4f478bff" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/bot/SuatBot.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/AiProperties.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/CoursePromptRegistry.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/TelegramConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/CourseController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/CourseEvalController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/LlmService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/WebSecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/AiController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/AiController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/WebSecurityConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/WebSecurityConfig.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/install.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar.original" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar.original" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/suatgpt.mv.db" beforeDir="false" afterPath="$PROJECT_DIR$/data/suatgpt.mv.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/suatgpt.trace.db" beforeDir="false" afterPath="$PROJECT_DIR$/data/suatgpt.trace.db" afterDir="false" />
+    <list default="true" id="b80ac018-8470-4c71-931c-e49b4f478bff" name="Changes" comment="SUAT-GPT v1.0">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,7 +20,8 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/backend" />
+    <option name="ROOT_SYNC" value="SYNC" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -60,41 +39,48 @@
     <commands />
     <urls />
   </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 4
 }</component>
   <component name="ProjectId" id="39tVxtiTpM3C5xrbJKP6LD9Iki1" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;Spring Boot.SuatGptBackendApplication.executor&quot;: &quot;Run&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.SuatGptBackendApplication.executor": "Run",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "settings.sync",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="SuatGptBackendApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
@@ -121,12 +107,41 @@
       <option name="presentableId" value="Default" />
       <updated>1771515610916</updated>
       <workItem from="1771515614502" duration="3588000" />
-      <workItem from="1771550466300" duration="10460000" />
+      <workItem from="1771550466300" duration="19270000" />
+      <workItem from="1771727864365" duration="2514000" />
+      <workItem from="1771901068387" duration="13662000" />
+      <workItem from="1771990204722" duration="6864000" />
+      <workItem from="1772062928456" duration="3082000" />
+      <workItem from="1772072840704" duration="25371000" />
+      <workItem from="1772148263682" duration="1958000" />
     </task>
+    <task id="LOCAL-00001" summary="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。&#10;SUAT-GPT v5.0">
+      <option name="closed" value="true" />
+      <created>1772163340890</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1772163340890</updated>
+    </task>
+    <task id="LOCAL-00002" summary="SUAT-GPT v1.0">
+      <option name="closed" value="true" />
+      <created>1772163814856</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1772163814856</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。" />
+    <MESSAGE value="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。&#10;SUAT-GPT v5.0" />
+    <MESSAGE value="SUAT-GPT v1.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="SUAT-GPT v1.0" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
