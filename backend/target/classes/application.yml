@@ -34,19 +34,35 @@ spring:
   # ---------------------------------------
   # 数据库配置 (H2 内存数据库 - 开发环境)
   # ---------------------------------------
+#  datasource:
+#    # 关键修改：从 mem 改为 file 模式
+#    # suatgpt 是数据库文件名，它会生成在项目根目录下
+#    url: jdbc:h2:file:./data/suatgpt;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+#    driver-class-name: org.h2.Driver
+#    username: sa
+#    password:
+#  jpa:
+#    hibernate:
+#      # 调试期可以用 update，它会保留数据并更新表结构
+#      # 千万别用 create 或 create-drop，那也会导致重启清空
+#      ddl-auto: update
+#    show-sql: true
+
   datasource:
-    # 关键修改：从 mem 改为 file 模式
-    # suatgpt 是数据库文件名，它会生成在项目根目录下
-    url: jdbc:h2:file:./data/suatgpt;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    # 这里的 suat_recruitment 是你在 Workbench 里执行 CREATE DATABASE 建的库名
+    url: jdbc:mysql://localhost:3306/suat_recruitment?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456  # 这是你之前设定的物理密码
+
   jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      # 调试期可以用 update，它会保留数据并更新表结构
-      # 千万别用 create 或 create-drop，那也会导致重启清空
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: update # 物理同步：Java 类改了，数据库表会自动跟着改
+    show-sql: true # 在控制台打印 SQL，方便处长监控数据流动
+    properties:
+      hibernate:
+        format_sql: true
 
   # H2 Console 配置（仅用于开发环境调试）
   h2:
@@ -140,6 +156,11 @@ ai:
     # 填入学生工作知识库 ID
     weknora-kb-id: d54d1559-f271-46a1-a222-ba2f8cdc8cab
 
+  # 8. Aliyun Coding Plan
+  aliyun-coding:
+    base-url: https://coding.dashscope.aliyuncs.com/v1
+    api-key: sk-sp-4d23b07a6058448796c041166a3f6fc5
+    model: qwen3.5-plus
 # ================= 代理配置 (新增) =================
 proxy:
   enabled: true

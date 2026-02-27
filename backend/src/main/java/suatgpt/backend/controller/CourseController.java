@@ -46,13 +46,13 @@ public class CourseController {
         String previousHistory = payload.get("history") != null ? payload.get("history").toString() : "课题原始素材";
 
         String finalPrompt = switch (step) {
-            case 1 -> String.format(CoursePromptRegistry.STEP1_LOCATING, topic, previousHistory);
-            case 2 -> String.format(CoursePromptRegistry.STEP2_ANALYSIS, previousHistory, topic);
-            case 3 -> String.format(CoursePromptRegistry.STEP3_STRUCTURE, previousHistory, topic);
-            case 4 -> String.format(CoursePromptRegistry.STEP4_CASES, previousHistory, topic);
-            case 5 -> String.format(CoursePromptRegistry.STEP5_BRANDING, "实战型", previousHistory);
-            case 6 -> String.format(CoursePromptRegistry.STEP6_PPT, previousHistory);
-            case 7 -> String.format(CoursePromptRegistry.STEP7_MANUAL, previousHistory);
+            case 1 -> String.format(CoursePromptRegistry.STEP1_LOCATING, topic, previousHistory) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
+            case 2 -> String.format(CoursePromptRegistry.STEP2_ANALYSIS, previousHistory, topic) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
+            case 3 -> String.format(CoursePromptRegistry.STEP3_STRUCTURE, previousHistory, topic) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
+            case 4 -> String.format(CoursePromptRegistry.STEP4_CASES, previousHistory, topic) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
+            case 5 -> String.format(CoursePromptRegistry.STEP5_BRANDING, "实战型", previousHistory) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
+            case 6 -> String.format(CoursePromptRegistry.STEP6_PPT, previousHistory) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
+            case 7 -> String.format(CoursePromptRegistry.STEP7_MANUAL, previousHistory) + CoursePromptRegistry.ANTI_WEIRD_CLOT;
             default -> "请继续萃取内容";
         };
 

@@ -5,12 +5,14 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
 import suatgpt.backend.model.User;
 import suatgpt.backend.repository.UserRepository;
 
 @SpringBootApplication
+@EnableScheduling // 🚀 必须开启这个，定时任务才会物理生效！
 public class SuatGptBackendApplication {
 
     public static void main(String[] args) {

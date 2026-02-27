@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>应聘工作站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .step-inactive { display: none; }
+        .suat-theme { background: #75207D; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <div class="flex justify-between mb-10 text-xs font-bold text-gray-400">
+            <span id="step-tag-1" class="text-purple-600">1. 选择岗位</span>
+            <span id="step-tag-2">2. 简历初筛</span>
+            <span id="step-tag-3">3. AI 笔试</span>
+            <span id="step-tag-4">4. 专家面试</span>
+        </div>
+
+        <section id="step-1" class="space-y-4">
+            <h2 class="text-2xl font-bold mb-6">最新招聘公告</h2>
+            <div id="job-list" class="grid gap-4">
+                </div>
+        </section>
+
+        <section id="step-2" class="step-inactive glass-card p-8 rounded-3xl bg-white shadow-xl">
+            <h2 id="current-job-title" class="text-3xl font-black text-purple-800 mb-4"></h2>
+            <div id="current-job-ad" class="text-gray-600 mb-8 border-b pb-6 whitespace-pre-wrap"></div>
+            <div class="bg-purple-50 p-6 rounded-2xl border-2 border-dashed border-purple-200 text-center">
+                <input type="file" id="resume-input" class="hidden" onchange="uploadResume(this)">
+                <button onclick="document.getElementById('resume-input').click()" class="suat-theme text-white px-8 py-3 rounded-xl font-bold">上传 PDF 简历开启初筛</button>
+            </div>
+        </section>
+
+        <section id="step-3" class="step-inactive bg-white p-10 rounded-3xl shadow-2xl">
+            <div class="flex justify-between mb-6 italic text-sm text-purple-400">
+                <span>AI 考官实时命题中...</span>
+                <span id="test-idx">第 1 / 10 题</span>
+            </div>
+            <h3 id="question-text" class="text-xl font-bold mb-6 leading-relaxed"></h3>
+            <textarea id="answer-text" class="w-full h-40 p-4 border rounded-2xl mb-4 focus:ring-2 ring-purple-100 outline-none" placeholder="请详细阐述您的见解..."></textarea>
+            <button onclick="nextQuestion()" class="w-full py-4 suat-theme text-white rounded-xl font-bold">提交并继续</button>
+        </section>
+
+        <section id="step-4" class="step-inactive flex flex-col h-[600px]">
+            <div id="interview-chat" class="flex-1 overflow-y-auto space-y-4 p-4 custom-scrollbar"></div>
+            <div class="p-4 bg-white border-t flex gap-2">
+                <input id="chat-input" class="flex-1 outline-none" placeholder="请回答考官的提问...">
+                <button onclick="sendChat()" class="suat-theme text-white px-6 py-2 rounded-xl">发送</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="interview-logic.js"></script>
+</body>
+</html>

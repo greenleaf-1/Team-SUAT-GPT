@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - SUAT 智能面试系统</title>
+    <style>
+        body { font-family: 'PingFang SC', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { width: 380px; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .login-card h2 { text-align: center; color: #1890ff; margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 6px; box-sizing: border-box; outline: none; }
+        .input-group input:focus { border-color: #1890ff; }
+        .btn-login { width: 100%; background: #1890ff; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 500; }
+        .btn-login:hover { background: #40a9ff; }
+        .error-msg { color: #f5222d; font-size: 14px; margin-top: 10px; text-align: center; display: none; }
+        .hint { font-size: 12px; color: #888; margin-top: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>🔑 系统登录</h2>
+    <div class="input-group">
+        <label>用户名</label>
+        <input type="text" id="username" placeholder="请输入 SUAT/XJY/XMU 开头的账号">
+    </div>
+    <div class="input-group">
+        <label>密码</label>
+        <input type="password" id="password" placeholder="请输入密码">
+    </div>
+    <button class="btn-login" onclick="doLogin()">立即登录 / 注册</button>
+    <div id="error-box" class="error-msg">用户名或密码错误</div>
+    <div class="hint">新用户输入正确前缀的账号将自动注册</div>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:8080/api/auth";
+
+    /**
+     * 核心逻辑：获取来源页面
+     * 比如从 admin.html 跳过来，URL 会是 login.html?redirect=admin.html
+     */
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect') || 'index.html'; // 默认回首页
+
+    async function doLogin() {
+        const user = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value.trim();
+        const errorBox = document.getElementById('error-box');
+
+        if(!user || !pass) return alert("请填写完整信息");
+
+        try {
+            // 物理对接 AuthController
+            const res = await fetch(`${API_BASE}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+
+            const data = await res.json();
+
+            if(res.ok && data.token) {
+                console.log("Token 获取成功:", data.token);
+                localStorage.setItem('token', data.token);
+                
+                // 物理强制跳转
+                const finalTarget = redirectUrl;
+                console.log("即将跳转至:", finalTarget);
+                window.location.replace(finalTarget); // 使用 replace 防止后退死循环
+            } else {
+                errorBox.style.display = 'block';
+                errorBox.innerText = data.message || "登录失败，请检查账号前缀";
+            }
+        } catch (error) {
+            errorBox.style.display = 'block';
+            errorBox.innerText = "服务器连接失败";
+        }
+    }
+</script>
+</body>
+</html>

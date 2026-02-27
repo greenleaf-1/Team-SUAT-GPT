@@ -2,99 +2,122 @@ package suatgpt.backend.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import suatgpt.backend.service.UserService;
-import suatgpt.backend.repository.UserRepository;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.bind.annotation.*;
 import suatgpt.backend.model.User;
+import suatgpt.backend.repository.UserRepository;
+import suatgpt.backend.service.UserService;
+import suatgpt.backend.utils.JwtUtils;
+
+import java.util.Map;
 
 /**
  * 认证控制器
- * 负责处理用户认证相关的 API 路由，包括注册和登录。
- * @RestController: 组合了 @Controller 和 @ResponseBody。
- * @RequestMapping("/api/auth"): 定义所有方法的基本路由路径。
+ * 物理修复版：支持登录即自动注册，并根据用户名特征区分 ADMIN 和 CANDIDATE 角色。
  */
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AuthController {
 
-    // 注入用户服务和用户仓库，用于处理注册/登录和查询当前用户
     private final UserService userService;
     private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
+    private final JwtUtils jwtUtils;
 
     /**
-     * 构造函数：通过依赖注入获取 UserService 和 UserRepository 实例。
+     * 构造函数：注入所有核心安全组件，解决符号找不到的问题。
      */
-    public AuthController(UserService userService, UserRepository userRepository) {
+    public AuthController(UserService userService,
+                          UserRepository userRepository,
+                          AuthenticationManager authenticationManager,
+                          UserDetailsService userDetailsService,
+                          JwtUtils jwtUtils) {
         this.userService = userService;
         this.userRepository = userRepository;
+        this.authenticationManager = authenticationManager;
+        this.userDetailsService = userDetailsService;
+        this.jwtUtils = jwtUtils;
     }
 
-    // --- DTOs (Data Transfer Objects) ---
+    // --- DTOs (使用 Class 替代 Record 以确保物理 Getter 存在) ---
 
-    /**
-     * 登录/注册请求体 (DTO)
-     * 用于接收客户端提交的用户名和密码。
-     * @param username 用户名
-     * @param password 密码
-     */
-    record AuthRequest(String username, String password) {}
+    public static class AuthRequest {
+        private String username;
+        private String password;
 
-    /**
-     * 认证成功响应体 (DTO)
-     * 用于向客户端返回 JWT Token 和一条消息。
-     * @param token JWT 令牌（登录时返回）
-     * @param message 响应消息
-     */
-    record AuthResponse(String token, String message) {}
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+    }
+
+    public static class AuthResponse {
+        private String token;
+        private String message;
+
+        public AuthResponse(String token, String message) {
+            this.token = token;
+            this.message = message;
+        }
+
+        public String getToken() { return token; }
+        public String getMessage() { return message; }
+    }
 
     // --- API Endpoints ---
 
     /**
-     * 用户注册接口
-     * 路由: POST /api/auth/register
-     * @param request 包含用户名和密码的 AuthRequest DTO
-     * @return 注册成功信息或错误详情
-     */
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
-        try {
-            // 调用服务层进行用户注册
-            userService.registerUser(request.username, request.password);
-            // 注册成功，返回 200 OK
-            return ResponseEntity.ok(new AuthResponse(null, "User registered successfully!"));
-        } catch (IllegalArgumentException e) {
-            // 捕获业务逻辑异常（如用户名已存在），返回 400 Bad Request
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new AuthResponse(null, e.getMessage()));
-        } catch (Exception e) {
-            // 捕获其它服务器端异常，返回 500 Internal Server Error
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new AuthResponse(null, "Registration failed: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 用户登录接口
-     * 路由: POST /api/auth/login
-     * @param request 包含用户名和密码的 AuthRequest DTO
-     * @return 包含 JWT Token 的响应或认证失败信息
+     * 用户登录接口 (逻辑增强版)
+     * 实现：不存在即自动注册，通过前缀和关键字判定角色。
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        String username = request.getUsername();
+        String password = request.getPassword();
+
         try {
-            // 调用服务层进行登录验证并生成 JWT Token
-            String token = userService.loginAndGenerateToken(request.username, request.password);
-            // 登录成功，返回 200 OK，携带生成的 token
-            return ResponseEntity.ok(new AuthResponse(token, "Authentication successful"));
+            // 1. 物理检查：如果数据库中不存在该用户，则先执行注册逻辑。
+            if (!userRepository.existsByUsername(username)) {
+                System.out.println(">>> [自动注册] 检测到新用户: " + username);
+                // UserService.registerUser 内部已包含 ADMIN 关键字判定和前缀校验逻辑。
+                userService.registerUser(username, password);
+            }
+
+            // 2. 此时数据库已有记录，进行标准 Spring Security 认证。
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+
+            // 3. 认证成功，生成 JWT Token 并更新心跳。
+            final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            final String token = jwtUtils.generateToken(userDetails);
+
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "message", "Authentication successful"
+            ));
+
+        } catch (IllegalArgumentException e) {
+            // 捕获 SUAT/XJY/XMU 前缀校验失败。
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        } catch (AuthenticationException e) {
+            // 捕获密码错误。
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid username or password"));
         } catch (Exception e) {
-            // 捕获认证失败异常（如用户名不存在或密码错误），返回 401 Unauthorized
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(null, "Invalid username or password"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "System error: " + e.getMessage()));
         }
     }
 
     /**
-     * 获取当前已认证用户的信息（脱敏，不包含密码）
-     * 路由: GET /api/auth/me
+     * 获取当前用户信息
+     * 路由: GET /api/auth/me。
      */
     @GetMapping("/me")
     public ResponseEntity<?> me(@AuthenticationPrincipal UserDetails userDetails) {
@@ -102,20 +125,16 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(null, "Not authenticated"));
         }
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElse(null);
-
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElse(null);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new AuthResponse(null, "User not found"));
         }
 
-        // 返回脱敏后的用户信息
-        var userDto = new Object() {
-            public Long id = user.getId();
-            public String username = user.getUsername();
-            public String role = user.getRole();
-        };
-
-        return ResponseEntity.ok(userDto);
+        return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "role", user.getRole(),
+                "status", user.getStatus()
+        ));
     }
 }

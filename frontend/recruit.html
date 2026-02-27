@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>SUAT 招聘管理中枢</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+        .suat-gradient { background: linear-gradient(135deg, #75207D 0%, #a239b0 100%); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #75207D; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<div class="max-w-7xl mx-auto px-6 py-10">
+    <div class="flex justify-between items-center mb-10">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">📢 招聘管理中枢</h1>
+            <p class="text-gray-500">发布岗位需求、管理应聘进度与 AI 评估结果</p>
+        </div>
+        <button onclick="window.location.href='index.html'" class="px-5 py-2 bg-white border rounded-lg hover:bg-gray-100 transition flex items-center gap-2">
+            🏠 返回大厅
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="glass-card p-6 rounded-2xl shadow-sm">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-purple-700">✍️ 发布招聘需求</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">意向岗位</label>
+                        <input type="text" id="job-title" placeholder="如：技术部·后端开发" class="w-full px-4 py-2 border rounded-xl focus:ring-2 ring-purple-200 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">岗位关键词</label>
+                        <textarea id="job-desc" placeholder="输入技术要求、素质要求..." class="w-full px-4 py-2 border rounded-xl h-32 focus:ring-2 ring-purple-200 outline-none"></textarea>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="needs-test" class="rounded text-purple-600">
+                        <label for="needs-test" class="text-sm text-gray-500">开启 AI 自动笔试环节</label>
+                    </div>
+                    <button onclick="generateAd()" id="gen-btn" class="w-full py-3 suat-gradient text-white rounded-xl font-bold hover:opacity-90 transition shadow-lg">
+                        ✨ AI 生成招聘广告
+                    </button>
+                </div>
+            </div>
+
+            <div id="ad-container" class="hidden glass-card p-6 rounded-2xl border-dashed border-2 border-purple-200 animate-pulse">
+                <h4 class="text-sm font-bold text-purple-600 mb-2">AI 宣传文案预检：</h4>
+                <div id="ad-content" class="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar"></div>
+                <button onclick="publishJob()" id="pub-btn" class="mt-4 w-full py-2 bg-purple-700 text-white rounded-lg text-sm font-bold hover:bg-purple-800 transition">
+                    确认并发布到门户
+                </button>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="glass-card p-6 rounded-2xl shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-gray-800">📊 实时面试动态</h3>
+                    <button onclick="loadCandidates()" class="text-sm text-purple-600 hover:underline">🔄 刷新数据</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="text-gray-400 text-sm border-b">
+                            <tr>
+                                <th class="pb-3 font-medium">候选人 ID</th>
+                                <th class="pb-3 font-medium">应聘岗位</th>
+                                <th class="pb-3 font-medium">物理状态</th>
+                                <th class="pb-3 font-medium">AI 评分</th>
+                                <th class="pb-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidate-list" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 🚀 动态识别后端地址，保证无缝迁移
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `http://${window.location.host}/api`;
+    const token = localStorage.getItem('token');
+
+    window.onload = () => {
+        if(!token) window.location.href = 'login.html';
+        loadCandidates();
+    };
+
+    // 1. AI 自动生成并实时显示文案 (处理流式输出)
+    async function generateAd() {
+        const title = document.getElementById('job-title').value;
+        const desc = document.getElementById('job-desc').value;
+        if(!title) return alert("请输入岗位名称");
+
+        const btn = document.getElementById('gen-btn');
+        const adContainer = document.getElementById('ad-container');
+        const adContent = document.getElementById('ad-content');
+
+        btn.innerText = "⚡ 正在构思文案...";
+        btn.disabled = true;
+        adContainer.classList.remove('hidden');
+        adContent.innerText = "";
+
+        try {
+            const res = await fetch(`${API_BASE}/ai/chat/stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ 
+                    message: `请作为专业HR，为岗位[${title}]生成一段吸引人的社团招聘简章。要求：[${desc}]。包含：【岗位简介】【硬核要求】【独家福利】。`, 
+                    modelKey: 'anything-llm',
+                    sessionId: 'job-ad-gen'
+                })
+            });
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                lines.forEach(line => {
+                    if (line.startsWith('data:')) {
+                        const data = line.substring(5).trim();
+                        if (data === '[DONE]') return;
+                        try {
+                            const json = JSON.parse(data);
+                            const text = json.choices?.[0]?.delta?.content || "";
+                            adContent.innerText += text;
+                        } catch(e) {}
+                    }
+                });
+            }
+            adContainer.classList.remove('animate-pulse');
+        } catch (e) {
+            alert("AI 引擎连接失败");
+        } finally {
+            btn.innerText = "✨ 重新生成广告";
+            btn.disabled = false;
+        }
+    }
+
+    // 2. 🚀 关键修复：点击发布，将数据存入数据库
+    async function publishJob() {
+        const title = document.getElementById('job-title').value;
+        const desc = document.getElementById('job-desc').value;
+        const adText = document.getElementById('ad-content').innerText;
+        const needsTest = document.getElementById('needs-test').checked;
+
+        if(!adText) return alert("请先生成广告文案");
+
+        const pubBtn = document.getElementById('pub-btn');
+        pubBtn.innerText = "正在同步至云端...";
+        pubBtn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/jobs/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    title: title,
+                    description: desc,
+                    adText: adText,
+                    status: "OPEN"
+                    // 如果你后端加了 needsTest 字段，这里也可以传
+                })
+            });
+
+            if(res.ok) {
+                alert("🎉 发布成功！岗位已物理推送到应聘者大厅。");
+                document.getElementById('ad-container').classList.add('hidden');
+            } else {
+                alert("发布失败，请检查后端 Job 实体是否已创建");
+            }
+        } catch (e) {
+            alert("网络故障");
+        } finally {
+            pubBtn.innerText = "确认并发布到门户";
+            pubBtn.disabled = false;
+        }
+    }
+
+    // 3. 加载候选人 (调用你的业务接口 /candidates)
+    async function loadCandidates() {
+        try {
+            const res = await fetch(`${API_BASE}/recruit/candidates`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const list = document.getElementById('candidate-list');
+            list.innerHTML = data.map(user => `
+                <tr class="hover:bg-purple-50 transition-colors">
+                    <td class="py-4 font-bold text-gray-700">${user.username}</td>
+                    <td class="py-4 text-sm text-gray-500">已关联简历</td>
+                    <td class="py-4">
+                        <span class="px-2 py-1 rounded-md text-xs font-bold ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">
+                            ${user.status === 'ACTIVE' ? '正在测试' : '待处理'}
+                        </span>
+                    </td>
+                    <td class="py-4 font-mono text-purple-600 font-bold">待评分</td>
+                    <td class="py-4 text-right">
+                        <button onclick="alert('正在调取 ${user.username} 的物理笔录...')" class="text-xs bg-white border px-3 py-1 rounded-lg shadow-sm hover:bg-gray-100">调取笔录</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.log("加载失败"); }
+    }
+</script>
+</body>
+</html>
