@@ -4,44 +4,63 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b80ac018-8470-4c71-931c-e49b4f478bff" name="Changes" comment="SUAT-GPT v1.0">
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/InterviewController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/InterviewRecord.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/InterviewRecordRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/InterviewService.java" afterDir="false" />
+    <list default="true" id="b80ac018-8470-4c71-931c-e49b4f478bff" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/bot/SuatBot.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/bot/SuatBot.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/AiProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/AiProperties.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/InterviewPromptRegistry.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/InterviewPromptRegistry.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/JwtTokenFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/JwtTokenFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/WebSecurityConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/AiController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/AiController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/CourseEvalController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/CourseEvalController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/InterviewController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/InterviewController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/RecruitController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/RecruitController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/InterviewRecord.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/InterviewRecord.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/Job.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/Job.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/JobRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/JobRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/UserRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/AiService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/AiService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/LlmService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/LlmService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/InterviewService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/InterviewService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/UserService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties$DeepSeekPublic.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/SuatGptBackendApplication.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/SuatGptBackendApplication.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/bot/SuatBot.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties$ConfigItem.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties$ConfigItem.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties$WeKnoraConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties$WeKnoraConfig.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/AiProperties.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/InterviewPromptRegistry.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/InterviewPromptRegistry.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/JwtTokenFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/JwtTokenFilter.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/WebSecurityConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/WebSecurityConfig.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$ChatRequest.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$ChatRequest.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$CreateSessionRequest.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$CreateSessionRequest.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$MessageResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$MessageResponse.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$SessionResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController$SessionResponse.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AiController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AuthController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/AuthController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/CourseController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/CourseController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/CourseEvalController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/CourseEvalController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/InterviewController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/InterviewController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/RecruitController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/RecruitController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/InterviewRecord.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/InterviewRecord.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/Job.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/Job.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/repository/JobRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/repository/JobRepository.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/repository/UserRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/repository/UserRepository.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/User.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/AiService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/AiService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/DiaryAgentService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/DiaryAgentService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/InterviewCleanupService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/InterviewCleanupService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/InterviewService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/InterviewService.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/LlmService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/LlmService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/MailService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/MailService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/SecurityUserDetailsService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/SecurityUserDetailsService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/UserService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/UserService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/utils/JwtUtils.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/utils/JwtUtils.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/ai-course.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/ai-course.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/interview-logic.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/interview-logic.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/interview.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/interview.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/login.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/recruit.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/recruit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -150,6 +169,12 @@
       <workItem from="1772062928456" duration="3082000" />
       <workItem from="1772072840704" duration="25371000" />
       <workItem from="1772148263682" duration="1958000" />
+      <workItem from="1772237363182" duration="26399000" />
+      <workItem from="1772326151079" duration="19641000" />
+      <workItem from="1772377833372" duration="4618000" />
+      <workItem from="1772409350541" duration="8953000" />
+      <workItem from="1772539416566" duration="3587000" />
+      <workItem from="1772712227218" duration="25067000" />
     </task>
     <task id="LOCAL-00001" summary="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。&#10;SUAT-GPT v5.0">
       <option name="closed" value="true" />
@@ -167,7 +192,15 @@
       <option name="project" value="LOCAL" />
       <updated>1772163814856</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="SUAT-GPT v5.3&#10;&#10;进一步集成招聘智能体">
+      <option name="closed" value="true" />
+      <created>1772208437556</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1772208437556</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -177,7 +210,8 @@
     <MESSAGE value="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。" />
     <MESSAGE value="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。&#10;SUAT-GPT v5.0" />
     <MESSAGE value="SUAT-GPT v1.0" />
-    <option name="LAST_COMMIT_MESSAGE" value="SUAT-GPT v1.0" />
+    <MESSAGE value="SUAT-GPT v5.3&#10;&#10;进一步集成招聘智能体" />
+    <option name="LAST_COMMIT_MESSAGE" value="SUAT-GPT v5.3&#10;&#10;进一步集成招聘智能体" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
