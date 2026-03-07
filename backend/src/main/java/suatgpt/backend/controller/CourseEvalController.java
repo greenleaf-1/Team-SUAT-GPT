@@ -71,7 +71,9 @@ public class CourseEvalController {
     }
 
     private Map<String, Object> generateResponse(String template, String context, String target) {
-        String fullPrompt = String.format(template, context, target);
-        return llmService.callAI(fullPrompt, target);
+        String fullPrompt = String.format(template, target);
+        // 🚀 物理对齐：补全第三个参数 "aliyun-coding" 或 "qwen-public"
+        // 建议用 aliyun-coding，因为制课需要长文本输出，这个模型最稳
+        return llmService.callAI(fullPrompt, context, "aliyun-coding");
     }
 }

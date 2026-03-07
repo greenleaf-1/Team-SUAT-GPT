@@ -42,6 +42,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
      * 核心过滤方法，处理每个 HTTP 请求
      */
     @Override
+
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
@@ -49,7 +50,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         if (DispatcherType.ASYNC.equals(request.getDispatcherType())) {
             filterChain.doFilter(request, response);
-            return;
+//            return;
         }
         // 1. 尝试从请求头中获取 Authorization 字段的值
         final String header = request.getHeader("Authorization");

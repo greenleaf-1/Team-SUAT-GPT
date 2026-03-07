@@ -1,166 +1,136 @@
 package suatgpt.backend.controller;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
-import suatgpt.backend.config.InterviewPromptRegistry;
-import suatgpt.backend.model.User;
+import org.springframework.web.bind.annotation.*;
 import suatgpt.backend.model.Job;
-import suatgpt.backend.repository.UserRepository;
+import suatgpt.backend.model.InterviewRecord;
 import suatgpt.backend.repository.JobRepository;
+import suatgpt.backend.repository.InterviewRecordRepository;
+import suatgpt.backend.service.InterviewService;
+import suatgpt.backend.service.MailService;
 
-import jakarta.annotation.PostConstruct;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/recruit")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class RecruitController {
 
-    // 🚀 迁移关键：使用配置变量，若未配置则默认为当前目录下 uploads 文件夹
-    @Value("${app.upload.path:./uploads/interview/}")
-    private String workspace;
-
-    private static final Map<String, StringBuilder> sessionHistoryPool = new ConcurrentHashMap<>();
-
-    private final UserRepository userRepository;
     private final JobRepository jobRepository;
+    private final InterviewRecordRepository interviewRecordRepository;
+    private final InterviewService interviewService;
+    private final MailService mailService;
 
-    public RecruitController(UserRepository userRepository, JobRepository jobRepository) {
-        this.userRepository = userRepository;
+    public RecruitController(JobRepository jobRepository,
+                             InterviewRecordRepository interviewRecordRepository,
+                             InterviewService interviewService,
+                             MailService mailService) {
         this.jobRepository = jobRepository;
+        this.interviewRecordRepository = interviewRecordRepository;
+        this.interviewService = interviewService;
+        this.mailService = mailService;
     }
 
-    /**
-     * 物理初始化：确保上传目录在任何系统（Win/Linux）下都存在
-     */
-    @PostConstruct
-    public void init() {
-        File dir = new File(workspace);
-        if (!dir.exists()) {
-            boolean created = dir.mkdirs();
-            System.out.println(">>> [系统初始化] 物理存储路径创建: " + workspace + " (" + created + ")");
+    // 🚀 1. 部长一键看大盘
+    @GetMapping("/job-stats")
+    public ResponseEntity<List<Map<String, Object>>> getJobStats() {
+        List<Job> allJobs = jobRepository.findAll();
+        List<Map<String, Object>> stats = new ArrayList<>();
+
+        for (Job job : allJobs) {
+            List<InterviewRecord> candidates = interviewRecordRepository.findByJobId(job.getId());
+            Map<String, Object> jobMap = new HashMap<>();
+            jobMap.put("id", job.getId());
+            jobMap.put("title", job.getTitle());
+            jobMap.put("adText", job.getAdText());
+            jobMap.put("status", job.getStatus());
+            jobMap.put("candidateCount", candidates.size());
+            jobMap.put("candidates", candidates); // 部长点击下拉，直接看到详细对话史
+            stats.add(jobMap);
         }
+        return ResponseEntity.ok(stats);
     }
 
-    /**
-     * 🚀 1. 全量监控 (admin.html 专用)
-     */
-    @GetMapping("/all-users")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    /**
-     * 🚀 2. 招聘中枢数据 (recruit.html 专用)
-     */
-    @GetMapping("/candidates")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<User> getRealCandidates() {
-        return userRepository.findAll().stream()
-                .filter(u -> "CANDIDATE".equals(u.getRole()))
-                .filter(u -> !"GUEST".equals(u.getStatus()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 🚀 3. 核心面试对话 (接入数据库 Job 描述)
-     */
-    @PostMapping("/chat")
-    public ResponseEntity<Map<String, String>> interviewChat(@RequestBody Map<String, Object> payload) {
-        String userMsg = payload.getOrDefault("message", "").toString();
-        String fileName = payload.getOrDefault("fileName", "unknown_candidate").toString();
-
-        // 🚀 业务逻辑：根据前端传来的 jobId 从数据库实时拉取岗位要求
-        String jobDescription = "通用岗位";
-        if (payload.get("jobId") != null) {
-            Optional<Job> job = jobRepository.findById(Long.parseLong(payload.get("jobId").toString()));
-            if (job.isPresent()) {
-                jobDescription = job.get().getDescription();
-            }
-        }
-
-        int chatCount = Integer.parseInt(payload.getOrDefault("chatCount", "1").toString());
-        String stageTask = InterviewPromptRegistry.getStageTask(chatCount);
-        StringBuilder history = sessionHistoryPool.computeIfAbsent(fileName, k -> new StringBuilder("面试开始\n"));
-
-        // 构造全量 Prompt
-        String finalPrompt = String.format(
-                InterviewPromptRegistry.INTERVIEW_TEMPLATE,
-                fileName, jobDescription, chatCount, stageTask, history.toString(), userMsg
-        );
-
-        String aiResponse = callOpenClawCLI(finalPrompt);
-
-        // 物理截断与防御
-        if (aiResponse.contains("核心指令") || aiResponse.length() < 2) {
-            aiResponse = InterviewPromptRegistry.FALLBACK_RESPONSE;
-        }
-
-        history.append("人:").append(userMsg).append(" | 机:").append(aiResponse).append("\n");
-
-        Map<String, String> response = new HashMap<>();
-        response.put("reply", aiResponse.trim());
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 4. 简历上传
-     */
-    @PostMapping("/upload")
-    public ResponseEntity<Map<String, Object>> uploadResume(@RequestParam("file") MultipartFile file) {
-        Map<String, Object> response = new HashMap<>();
+    // 🚀 2. 部长录用决策并自动发信
+    // 🚀 2. 部长录用决策并自动发信 (精准触达版)
+    @PostMapping("/hire")
+    public ResponseEntity<?> hire(@RequestBody Map<String, Long> payload) {
         try {
-            File destFile = new File(workspace, file.getOriginalFilename());
-            file.transferTo(destFile.getAbsoluteFile());
+            // 1. 🔍 物理定位：拿到 recordId (它是连接一切的物理钥匙)
+            Long id = payload.get("id");
+            System.out.println("📬 [录取指令接入] 正在处理档案 ID: " + id);
 
-            sessionHistoryPool.remove(file.getOriginalFilename());
-            response.put("code", 200);
-            response.put("fileName", file.getOriginalFilename());
-            return ResponseEntity.ok(response);
+            InterviewRecord record = interviewRecordRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("档案物理丢失，无法录用"));
+
+            // 2. 💾 状态落库
+            record.setStatus("HIRED");
+            interviewRecordRepository.save(record);
+
+            // 3. 📧 物理提取邮箱：优先使用候选人填写的邮箱
+            // 💡 逻辑：如果 record.getEmail() 为空或只有空格，则使用叶总邮箱兜底
+            String targetEmail = (record.getEmail() != null && !record.getEmail().trim().isEmpty())
+                    ? record.getEmail()
+                    : "SUAT24000137@stu.suat-sz.edu.cn";
+
+            System.out.println("🛰️ [物理发信中] 目标地址: " + targetEmail + " | 候选人: " + record.getCandidateName());
+
+            // 4. ⚡ 物理发射：调用邮件引擎
+            String subject = "入职通知书 - " + record.getCandidateName();
+            String content = String.format(
+                    "尊敬的 %s：\n\n恭喜您通过面试！经审批，您已正式被录用为【%s】！\n请于7日内与我单位相关对接人联系，进一步确认具体的入职时间及报到地点。期待您的加入。\n\n\n\nAI面试官",
+                    record.getCandidateName(),
+                    record.getJobTitle()
+            );
+
+            mailService.sendHomework(targetEmail, subject, content);
+
+            return ResponseEntity.ok(Map.of(
+                    "code", 200,
+                    "message", "录用指令已物理送达至：" + targetEmail,
+                    "target", targetEmail
+            ));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            // 🚀 物理通报：在控制台打印详细错误，防止盲目调试
+            System.err.println("🔥 [邮件引擎熄火]: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "邮件发送物理故障: " + e.getMessage()));
         }
     }
 
-    /**
-     * 5. 跨平台执行器：自适应操作系统命令
-     */
-    private String callOpenClawCLI(String message) {
-        StringBuilder result = new StringBuilder();
-        try {
-            String safeMsg = message.replace("\"", "'").replace("\n", " ");
+    // 🚀 3. 部长发招聘广告 (AI 辅助)
+    @PostMapping("/generate-ad")
+    public ResponseEntity<?> generateAd(@RequestBody Map<String, String> params) {
+        String title = params.getOrDefault("title", "未命名岗位");
+        String demand = params.getOrDefault("demand", "");
+        String finalAd = interviewService.automatedWorkflow(title + ": " + demand);
+        return ResponseEntity.ok(Map.of("success", true, "adContent", finalAd));
+    }
 
-            // 🚀 迁移关键：自动判定 OS，服务器通常是 Linux
-            String os = System.getProperty("os.name").toLowerCase();
-            ProcessBuilder pb;
-            if (os.contains("win")) {
-                pb = new ProcessBuilder("cmd", "/c", "openclaw", "agent", "--agent", "main", "--message", safeMsg);
-            } else {
-                pb = new ProcessBuilder("openclaw", "agent", "--agent", "main", "--message", safeMsg);
-            }
+    // 🚀 4. 部长增删岗位
+    @PostMapping("/jobs/publish")
+    public ResponseEntity<?> saveJob(@RequestBody Job job) {
+        job.setStatus("OPEN");
+        Job saved = jobRepository.save(job);
+        return ResponseEntity.ok(Map.of("success", true, "id", saved.getId()));
+    }
 
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("OpenClaw") || line.contains("2026-")) continue;
-                    String cleanLine = line.replaceAll("\\x1B\\[[0-9;]*[mK]", "").trim();
-                    if (!cleanLine.isEmpty()) result.append(cleanLine).append(" ");
-                }
-            }
-            process.waitFor();
-        } catch (Exception e) {
-            return InterviewPromptRegistry.ERROR_RESPONSE;
-        }
-        return result.toString().trim();
+    @DeleteMapping("/jobs/{id}")
+    public ResponseEntity<?> deleteJob(@PathVariable Long id) {
+        // 防外键报错：先删候选人，再删岗位
+        List<InterviewRecord> records = interviewRecordRepository.findByJobId(id);
+        interviewRecordRepository.deleteAll(records);
+        jobRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    // ==========================================
+    // 🚀 物理雷达：供前端实时查询候选人档案状态
+    // ==========================================
+    @GetMapping("/candidate/{id}")
+    public ResponseEntity<InterviewRecord> getCandidateDetail(@PathVariable Long id) {
+        return interviewRecordRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

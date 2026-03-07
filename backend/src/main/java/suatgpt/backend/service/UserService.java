@@ -29,31 +29,52 @@ public class UserService {
 
     @Transactional
     public User registerUser(String username, String rawPassword) {
-        String upperName = username.toUpperCase();
-        // 原有 SUAT/XJY/XMU 逻辑
-        if (!(upperName.startsWith("SUAT") || upperName.startsWith("XJY") || upperName.startsWith("XMU"))) {
-            throw new IllegalArgumentException("用户名必须以 SUAT、XJY 或 XMU 开头");
+        String trimmedName = username.trim();
+        if (userRepository.existsByUsername(trimmedName)) {
+            throw new IllegalArgumentException("该账号 [ " + trimmedName + " ] 已经注册过了，请直接登录。");
         }
-        if (userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("该用户名已存在");
-        }
+
+        String upperName = trimmedName.toUpperCase();
         User newUser = new User();
-        newUser.setUsername(username);
+        newUser.setUsername(trimmedName);
         newUser.setPassword(passwordEncoder.encode(rawPassword));
-        // 自动分发部长角色
-        newUser.setRole(upperName.contains("ADMIN") ? "ADMIN" : "CANDIDATE");
         newUser.setLastHeartbeat(LocalDateTime.now());
+
+        // 🚀 物理身份判定算法：支持学生、导师与管理
+        boolean isStudent = upperName.startsWith("SUAT") ||
+                upperName.startsWith("XJY") ||
+                upperName.startsWith("XMU");
+
+        // 💡 权限调整策略：
+        if (upperName.contains("ADMIN")) {
+            newUser.setRole("ADMIN");
+        } else if (isStudent) {
+            newUser.setRole("CANDIDATE");
+        } else {
+            // 🚀 物理提权：将所有导师（非学生账号）直接设定为 ADMIN，
+            // 这样他们在首页就能点亮所有系统模块了。
+            newUser.setRole("ADMIN");
+        }
+
+        System.out.println("🆕 [物理提权注册] 用户: " + trimmedName + " -> 最终权限: " + newUser.getRole());
         return userRepository.save(newUser);
     }
 
     @Transactional
     public String loginAndGenerateToken(String username, String password) {
-        Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
-        // 🚀 核心：登录即更新心跳
+        if (!userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("账号尚未注册，请先完成第一次注册。");
+        }
+
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password)
+        );
+
         userRepository.findByUsername(username).ifPresent(u -> {
             u.setLastHeartbeat(LocalDateTime.now());
             userRepository.save(u);
         });
+
         return jwtUtils.generateToken((UserDetails) auth.getPrincipal());
     }
 }

@@ -3,13 +3,12 @@ package suatgpt.backend.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import suatgpt.backend.config.AiProperties;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class LlmService {
@@ -20,109 +19,115 @@ public class LlmService {
 
     public LlmService(AiProperties aiProperties) {
         this.aiProperties = aiProperties;
-        // ✅ 保持直连模式，移除代理干扰
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
+                .connectTimeout(Duration.ofSeconds(60)) // 招聘推演较慢，增加超时
                 .build();
-
-        System.out.println("🚀 [LlmService] AI 引擎直连就绪（已强化 JSON 提取逻辑）");
     }
 
-    public Map<String, Object> callAI(String systemPrompt, String userPrompt) {
-        String apiKey = aiProperties.getDeepseekPublic().getApiKey();
-        String baseUrl = aiProperties.getDeepseekPublic().getBaseUrl();
+    /**
+     * 🚀 八路模型物理路由矩阵
+     */
+    private Map<String, String> routeModel(String modelKey) {
+        Map<String, String> config = new HashMap<>();
+        // 默认保底使用公网千问（因为目前它最稳）
+        String url = aiProperties.getQwenPublic().getBaseUrl();
+        String key = aiProperties.getQwenPublic().getApiKey();
+        String model = "qwen-plus";
 
-        String fullUrl = baseUrl.contains("/chat/completions") ? baseUrl : baseUrl + "/chat/completions";
-        if (baseUrl.endsWith("/v1")) {
-            fullUrl = baseUrl + "/chat/completions";
+        switch (modelKey) {
+            case "anything-llm" -> {
+                url = aiProperties.getAnythingLlm().getBaseUrl();
+                key = aiProperties.getAnythingLlm().getApiKey();
+                model = "suat";
+            }
+            case "qwen-internal" -> {
+                url = aiProperties.getQwenInternal().getBaseUrl();
+                key = aiProperties.getQwenInternal().getApiKey();
+                model = aiProperties.getQwenInternal().getModel();
+            }
+            case "deepseek-internal" -> {
+                url = aiProperties.getDeepseekInternal().getBaseUrl();
+                key = aiProperties.getDeepseekInternal().getApiKey();
+                model = aiProperties.getDeepseekInternal().getModel();
+            }
+            case "qwen-public" -> {
+                url = aiProperties.getQwenPublic().getBaseUrl();
+                key = aiProperties.getQwenPublic().getApiKey();
+                model = "qwen-plus";
+            }
+            case "deepseek-public" -> {
+                url = aiProperties.getDeepseekPublic().getBaseUrl();
+                key = aiProperties.getDeepseekPublic().getApiKey();
+                model = "deepseek-chat";
+            }
+            case "weknora" -> { // 对应配置中的第7项 deepseek (WeKnora模式)
+                url = aiProperties.getDeepseek().getBaseUrl();
+                key = aiProperties.getDeepseek().getApiKey();
+                model = "WeKnora";
+            }
+            case "aliyun-coding" -> {
+                url = aiProperties.getAliyunCoding().getBaseUrl();
+                key = aiProperties.getAliyunCoding().getApiKey();
+                model = aiProperties.getAliyunCoding().getModel();
+            }
+            case "embedding" -> {
+                url = aiProperties.getEmbedding().getBaseUrl();
+                key = aiProperties.getEmbedding().getApiKey();
+                model = aiProperties.getEmbedding().getModel();
+            }
         }
 
+        config.put("url", url.endsWith("/chat/completions") ? url : url + "/chat/completions");
+        config.put("key", key);
+        config.put("model", model);
+        return config;
+    }
+
+    /**
+     * 🛠️ 专门为招聘/制课设计的【同步返回文本】接口
+     */
+    public Map<String, Object> callAI(String systemPrompt, String userPrompt, String modelKey) {
+        // 1. 物理路由获取配置
+        Map<String, String> config = routeModel(modelKey);
+
         try {
-            String requestBody = """
-                {
-                    "model": "deepseek-chat",
-                    "messages": [
-                        {"role": "system", "content": "%s"},
-                        {"role": "user", "content": "%s"}
-                    ],
-                    "response_format": {"type": "json_object"}, 
-                    "temperature": 0.3
-                }
-                """.formatted(escapeJson(systemPrompt), escapeJson(userPrompt));
+            // 2. 物理构建 Payload
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("model", config.get("model"));
+            payload.put("messages", List.of(
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", userPrompt)
+            ));
+            payload.put("temperature", 0.7);
+
+            String requestBody = objectMapper.writeValueAsString(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(fullUrl))
+                    .uri(URI.create(config.get("url")))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + config.get("key"))
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            // 3. 物理错误诊断
             if (response.statusCode() != 200) {
-                return Map.of("error", "API 异常: " + response.statusCode());
+                return Map.of("answer", "❌ 物理链路故障: " + response.statusCode() + " (检查模型 " + modelKey + " 是否欠费)");
             }
 
-            Map<String, Object> rawResponse = objectMapper.readValue(response.body(), Map.class);
-            String content = extractContentFromResponse(rawResponse);
-
-            // ✅ 强化防御：精准提取 JSON 块，防止 AI 携带 Markdown 标签或解释性文字
-            content = cleanAndExtractJson(content);
-
-            try {
-                return objectMapper.readValue(content, Map.class);
-            } catch (Exception e) {
-                System.err.println("❌ JSON 解析失败，原始内容: " + content);
-                // 兜底：返回一个空结构，防止前端渲染崩溃
-                return Map.of(
-                        "score", 0,
-                        "metrics", Map.of("rarity",0,"utility",0,"freshness",0,"granularity",0),
-                        "analysis", "AI 返回格式异常，请重试。",
-                        "advice", "检查提示词约束"
-                );
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Map.of("error", "后端运行异常: " + e.getMessage());
-        }
-    }
-
-    /**
-     * ✅ 核心算法：从杂乱文本中精准提取第一个完整的 JSON 对象
-     */
-    private String cleanAndExtractJson(String content) {
-        if (content == null || content.isEmpty()) return "{}";
-
-        // 1. 去除常见的 Markdown 标识符
-        content = content.replace("```json", "").replace("```", "").trim();
-
-        // 2. 寻找第一个 { 和最后一个 }
-        int start = content.indexOf("{");
-        int end = content.lastIndexOf("}");
-
-        if (start != -1 && end != -1 && end > start) {
-            return content.substring(start, end + 1);
-        }
-        return content;
-    }
-
-    private String extractContentFromResponse(Map<String, Object> raw) {
-        try {
-            var choices = (java.util.List<?>) raw.get("choices");
+            // 4. 物理提取结果
+            Map<String, Object> raw = objectMapper.readValue(response.body(), Map.class);
+            var choices = (List<?>) raw.get("choices");
             var firstChoice = (Map<?, ?>) choices.get(0);
             var message = (Map<?, ?>) firstChoice.get("message");
-            return (String) message.get("content");
-        } catch (Exception e) {
-            return "{}";
-        }
-    }
+            String content = (String) message.get("content");
 
-    private String escapeJson(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "");
+            // 5. 统一包装返回，前端只需取 "answer"
+            return Map.of("answer", content);
+
+        } catch (Exception e) {
+            return Map.of("answer", "❌ 后端运行异常: " + e.getMessage());
+        }
     }
 }

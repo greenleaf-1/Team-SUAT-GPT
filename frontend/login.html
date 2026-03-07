@@ -2,81 +2,126 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>登录 - SUAT 智能面试系统</title>
+    <title>登录 - AI面试官</title>
     <style>
         body { font-family: 'PingFang SC', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { width: 380px; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .login-card h2 { text-align: center; color: #1890ff; margin-bottom: 30px; }
+        .login-card { width: 400px; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+        .login-card h2 { text-align: center; color: #75207D; margin-bottom: 30px; font-weight: 900; letter-spacing: 2px; }
         .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }
-        .input-group input { width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 6px; box-sizing: border-box; outline: none; }
-        .input-group input:focus { border-color: #1890ff; }
-        .btn-login { width: 100%; background: #1890ff; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 500; }
-        .btn-login:hover { background: #40a9ff; }
-        .error-msg { color: #f5222d; font-size: 14px; margin-top: 10px; text-align: center; display: none; }
-        .hint { font-size: 12px; color: #888; margin-top: 15px; text-align: center; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; font-size: 14px; }
+        .input-group input { width: 100%; padding: 14px; border: 2px solid #f0f0f0; border-radius: 12px; box-sizing: border-box; outline: none; transition: all 0.3s; }
+        .input-group input:focus { border-color: #75207D; background: #fafafa; }
+        
+        /* 🚀 双按钮布局 */
+        .btn-group { display: flex; gap: 12px; margin-top: 25px; }
+        .btn { flex: 1; padding: 14px; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: bold; transition: all 0.2s; border: none; }
+        
+        .btn-reg { background: white; color: #75207D; border: 2px solid #75207D; }
+        .btn-reg:hover { background: #fdf4ff; }
+        
+        .btn-login { background: #75207D; color: white; box-shadow: 0 4px 12px rgba(117, 32, 125, 0.3); }
+        .btn-login:hover { background: #a239b0; transform: translateY(-2px); }
+        .btn:active { transform: scale(0.98); }
+
+        .error-msg { color: #f5222d; font-size: 13px; margin-top: 15px; text-align: center; display: none; background: #fff1f0; padding: 10px; border-radius: 8px; border: 1px solid #ffa39e; }
+        .hint { font-size: 11px; color: #aaa; margin-top: 20px; text-align: center; line-height: 1.6; }
     </style>
 </head>
 <body>
 
 <div class="login-card">
-    <h2>🔑 系统登录</h2>
+    <h2>🔑 AI面试官</h2>
     <div class="input-group">
-        <label>用户名</label>
-        <input type="text" id="username" placeholder="请输入 SUAT/XJY/XMU 开头的账号">
+        <label>账号</label>
+        <input type="text" id="username" placeholder="请单位负责人（面试官）输入admin+单位/部门进行注册；请应聘者用用户名+手机号注册">
     </div>
     <div class="input-group">
         <label>密码</label>
         <input type="password" id="password" placeholder="请输入密码">
     </div>
-    <button class="btn-login" onclick="doLogin()">立即登录 / 注册</button>
-    <div id="error-box" class="error-msg">用户名或密码错误</div>
-    <div class="hint">新用户输入正确前缀的账号将自动注册</div>
+
+    <div class="btn-group">
+        <button class="btn btn-reg" onclick="doRegister()">新用户注册</button>
+        <button class="btn btn-login" onclick="doLogin()">登录</button>
+    </div>
+
+    <div id="error-box" class="error-msg"></div>
+    <div class="hint">
+        第一次使用本平台须要注册账号，注册后请直接登录。<br>
+        请单位负责人（面试官）输入admin+单位/部门进行注册。<br>
+        请应聘者用用户名+手机号注册。<br>
+        请牢记登录密码，一经确认不可修改。
+    </div>
 </div>
 
 <script>
-    const API_BASE = "http://localhost:8080/api/auth";
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080' : ''; 
 
-    /**
-     * 核心逻辑：获取来源页面
-     * 比如从 admin.html 跳过来，URL 会是 login.html?redirect=admin.html
-     */
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectUrl = urlParams.get('redirect') || 'index.html'; // 默认回首页
-
-    async function doLogin() {
+    // 🚀 物理功能 1：第一次注册
+    async function doRegister() {
         const user = document.getElementById('username').value.trim();
         const pass = document.getElementById('password').value.trim();
         const errorBox = document.getElementById('error-box');
 
-        if(!user || !pass) return alert("请填写完整信息");
+        if(!user || !pass) return alert("请填写注册信息");
 
         try {
-            // 物理对接 AuthController
-            const res = await fetch(`${API_BASE}/login`, {
+            const res = await fetch(`${API_BASE}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })
             });
+            const data = await res.json();
 
+            if(res.ok) {
+                alert("✅ 注册成功！现在请点击【登录】。");
+                errorBox.style.display = 'none';
+            } else {
+                showError(data.message || "注册失败");
+            }
+        } catch (error) {
+            showError("后端未响应");
+        }
+    }
+
+    // 🚀 物理功能 2：点火登录
+    async function doLogin() {
+        const user = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value.trim();
+
+        if(!user || !pass) return alert("信息不完整");
+
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
             const data = await res.json();
 
             if(res.ok && data.token) {
-                console.log("Token 获取成功:", data.token);
+                // 🔐 身份锁定存入缓存
                 localStorage.setItem('token', data.token);
-                
-                // 物理强制跳转
-                const finalTarget = redirectUrl;
-                console.log("即将跳转至:", finalTarget);
-                window.location.replace(finalTarget); // 使用 replace 防止后退死循环
+                localStorage.setItem('username', user); 
+
+                // 🚥 路由分流算法
+                const isStudent = user.toUpperCase().startsWith('SUAT') || 
+                                  user.toUpperCase().startsWith('XJY') || 
+                                  user.toUpperCase().startsWith('XMU');
+
+                window.location.replace(isStudent ? 'index.html' : 'index.html');
             } else {
-                errorBox.style.display = 'block';
-                errorBox.innerText = data.message || "登录失败，请检查账号前缀";
+                showError(data.message || "登录失败，请核对是否已注册");
             }
         } catch (error) {
-            errorBox.style.display = 'block';
-            errorBox.innerText = "服务器连接失败";
+            showError("请检查服务器运行状态");
         }
+    }
+
+    function showError(msg) {
+        const eb = document.getElementById('error-box');
+        eb.innerText = "❌ " + msg;
+        eb.style.display = 'block';
     }
 </script>
 </body>

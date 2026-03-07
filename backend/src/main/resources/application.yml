@@ -1,173 +1,115 @@
 # =======================================
-# Spring Boot 主配置 (application.yml)
+# SUAT-GPT 物理合拢配置文件 (v2026.03 - 终极适配版)
 # =======================================
-
-server:
-  # 应用程序运行端口
-  port: 8080
-  # 强制服务端使用 UTF-8 编码响应，避免客户端出现中文乱码
-  servlet:
-    encoding:
-      enabled: true
-      charset: UTF-8
-      force: true
 
 spring:
   application:
-    # 应用程序名称
     name: suat-gpt-backend
-  # ---------------------------------------
-  # 邮件服务配置 (Agent 发作业使用)
-  # ---------------------------------------
+  datasource:
+    # 🚀 物理对齐：确保指向 suat_recruitment
+    url: jdbc:mysql://localhost:3306/suat_recruitment?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: suat_admin
+    password: b28RLhZArHkXrGBX
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  spring:
+    jpa:
+      # 🚀 物理屏蔽：平时不准显示 SQL
+      hibernate:
+        ddl-auto: update  # 🚀 物理关键：让系统自动根据 Java 类创建数据库表
+      show-sql: false
+      properties:
+        hibernate:
+          dialect: org.hibernate.dialect.MySQL8Dialect
+          format_sql: false
+          # 🚀 深度静默：连 SQL 注释也不准出
+          use_sql_comments: false
+    logging:
+      level:
+        # 🚀 报忧不报喜的核心：只准输出 ERROR 级别的 SQL 异常
+        org.hibernate.SQL: ERROR
+        org.hibernate.engine.jdbc.spi.SqlExceptionHelper: ERROR
+        com.zaxxer.hikari: ERROR
 
+  # 2. 邮件 & 上传 & Context Path
   mail:
     host: smtp.exmail.qq.com
     port: 465
     username: SUAT24000137@stu.suat-sz.edu.cn
-    password: 7vxcMAFpianCVWZT  # 已填入你刚拿到的授权码
+    password: 7vxcMAFpianCVWZT
     properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true # 端口 465 必须强制 SSL
-  # ---------------------------------------
-  # 数据库配置 (H2 内存数据库 - 开发环境)
-  # ---------------------------------------
-#  datasource:
-#    # 关键修改：从 mem 改为 file 模式
-#    # suatgpt 是数据库文件名，它会生成在项目根目录下
-#    url: jdbc:h2:file:./data/suatgpt;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
-#    driver-class-name: org.h2.Driver
-#    username: sa
-#    password:
-#  jpa:
-#    hibernate:
-#      # 调试期可以用 update，它会保留数据并更新表结构
-#      # 千万别用 create 或 create-drop，那也会导致重启清空
-#      ddl-auto: update
-#    show-sql: true
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
 
-  datasource:
-    # 这里的 suat_recruitment 是你在 Workbench 里执行 CREATE DATABASE 建的库名
-    url: jdbc:mysql://localhost:3306/suat_recruitment?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: 123456  # 这是你之前设定的物理密码
+  servlet:
+    context-path: /api
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
-  jpa:
-    database-platform: org.hibernate.dialect.MySQL8Dialect
-    hibernate:
-      ddl-auto: update # 物理同步：Java 类改了，数据库表会自动跟着改
-    show-sql: true # 在控制台打印 SQL，方便处长监控数据流动
-    properties:
-      hibernate:
-        format_sql: true
-
-  # H2 Console 配置（仅用于开发环境调试）
-  h2:
-    console:
-      enabled: true # 启用 H2 控制台
-      path: /h2-console # H2 控制台访问路径
-
-# ---------------------------------------
-# JWT (JSON Web Token) 配置
-# ---------------------------------------
+---
+# ---------------------------------------------------------
+# 🤖 AI & 安全 & 系统通用配置 (全环境共享)
+# ---------------------------------------------------------
 jwt:
-  # 签名密钥 (Base64 编码)，用于 Token 的生成和验证。
   secret: YmFja2VuZC1rZXktZm9yLXN1YXQtZ3B0LXN0cnVjdHVyZS1leGFhbXBsZS1zZWNydC1oZXJlCg==
-  # Token 有效期 (毫秒)，此处为 86400000 毫秒 (24 小时)
   expiration: 86400000
 
-# ---------------------------------------
-# CORS (跨域资源共享) 配置
-# ---------------------------------------
 cors:
-  # 允许的来源
-  allowed-origins: "https://suat.ms1001.com,https://www.suat.ms1001.com,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
-  # 允许的 HTTP 方法
-  allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
-  # 允许的请求头：* 表示允许所有请求头
+  allowed-origins: "https://suat.ms1001.com,https://www.suat.ms1001.com,http://localhost:5173,http://localhost:3000,http://localhost:3001,*"
+  allowed-methods: "*"
   allowed-headers: "*"
 
-# ---------------------------------------
-# 日志配置
-# ---------------------------------------
-logging:
-  level:
-    suatgpt: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-
-# ================= AI 服务配置 =================
-telegram:
-  bot:
-    token: 8307413700:AAGt_RSwstRuDOSHqgFUn7mov-wN6pstTtc
-    username: SUAT_Course_Agent_Bot # 请确保与 BotFather 处设置的一致
-
-
-
 ai:
-  # 1. AnythingLLM (OpenAI 兼容模式)
+  # 1. AnythingLLM
   anything-llm:
     base-url: http://8.153.206.179:3001/api/v1/openai
     api-key: XBFXZHA-2TJ40GQ-GKAS881-DJADW75
     workspace-slug: suat
 
-  # 2. 内网 Qwen
+  # 2. 内网 Qwen (12号机)
   qwen-internal:
     base-url: http://10.22.18.12:40011/v1
     api-key: 2c1730a6-6a03-4e36-a885-39593ff99e37
     model: Qwen3-30B-A3B
 
-  # 3. 内网 DeepSeek
+  # 3. 内网 DeepSeek (101号机)
   deepseek-internal:
     base-url: http://10.22.18.101:9997/v1
     api-key: sk-vAoZbJylEqxjcSWEboRNifJTAnQMqsjo01BUxJGMBOIy0zjG
     model: deepseek-r1-0528-w8a8
 
-  # 4. Embedding 配置 (云端分片使用)
-  embedding:
-    base-url: http://10.22.18.12:40012/v1
-    api-key: 3c1730a6-6a03-4e36-a885-39593ff99e38
-    model: Qwen-embedding
-
-  # 5. 公网 Qwen (DashScope)
+  # 4. 公网 Qwen
   qwen-public:
     base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
     api-key: sk-56dbfe08b2124f9791240183bc1b236e
 
-  # 6. 公网 DeepSeek
+  # 5. 公网 DeepSeek
   deepseek-public:
     base-url: https://api.deepseek.com
     api-key: sk-4815d4f03b24410d88239af4af478e0a
 
-  # 7. 备用/自定义 DeepSeek (如 WeKnora 模式)
-#  deepseek:
-#    base-url: http://8.153.206.179:8001/api/v1
-#    api-key: sk-lE_y8rXBstdEmImQrw4eeGjCcOTm9VCmLBnyXkXqcqFrM3_m
-#    model: WeKnora
+  # 6. WeKnora (RAG 增强模式)
   deepseek:
     base-url: http://8.153.206.179:8001/api/v1
     api-key: sk-PnleJv1jLp0rtZyoEtz3eXmM2fskQ3cpdZ0NLhZlwG5nkvd3
-    # 填入之前 curl 成功的那个长 ID，不要填 suat
     weknora-session-id: d33e7ac1-9e1a-4b57-9274-f54708867126
-    # 填入学生工作知识库 ID
     weknora-kb-id: d54d1559-f271-46a1-a222-ba2f8cdc8cab
 
-  # 8. Aliyun Coding Plan
+  # 7. Aliyun Coding
   aliyun-coding:
     base-url: https://coding.dashscope.aliyuncs.com/v1
     api-key: sk-sp-4d23b07a6058448796c041166a3f6fc5
     model: qwen3.5-plus
-# ================= 代理配置 (新增) =================
+
 proxy:
-  enabled: true
+  enabled: false
   host: 127.0.0.1
-  # 🛑 重点：请核对你的 VPN 软件显示的 "HTTP Port" 或 "端口"
   port: 7897
 
-# 在 application.yml 中添加
+logging:
+  level:
+    root: INFO
+    suatgpt.backend: DEBUG
+
 storage:
-  path: ${LOG_PATH:/data/suat-gpt/logs/}
+  path: /data/suat-gpt/logs/

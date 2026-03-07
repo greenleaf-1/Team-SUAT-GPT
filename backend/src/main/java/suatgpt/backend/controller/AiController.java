@@ -40,7 +40,11 @@ public class AiController {
     }
 
     // 定义请求与响应数据结构
-    public record ChatRequest(String message, String modelKey, Long sessionId) {}
+    public record ChatRequest(
+            String message,
+            String modelKey,
+            @com.fasterxml.jackson.annotation.JsonProperty("sessionId") Object sessionId
+    ) {}
     public record CreateSessionRequest(String title) {}
     public record SessionResponse(Long id, String title, LocalDateTime createdAt) {}
     public record MessageResponse(String sender, String content, LocalDateTime timestamp) {}
@@ -81,55 +85,36 @@ public class AiController {
 
     /**
      * 核心流式对话端点
-     * 已加入原生 IO 存档逻辑，确保数据永久化
+     * 🚀 物理增强：已根据 application.yml 的 api 架构，自动路由 6 种模型
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamChat(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ChatRequest request) {
-        // 设置超时为 10 分钟
         SseEmitter emitter = new SseEmitter(600000L);
         User user = getUser(userDetails);
 
-        // --- 极简本地存档逻辑开始 ---
-        // 地址：backend/src/main/java/suatgpt/backend/controller/AiController.java
-        try {
-            // 使用当前系统目录，确保在 Linux 服务器上也能准确创建
-            String logDir = System.getProperty("user.dir") + java.io.File.separator + "logs";
-            java.nio.file.Path logPath = java.nio.file.Paths.get(logDir, "extraction_history.log");
+        // 1. 物理安全提取 sessionId
+        String sidStr = request.sessionId() != null ? String.valueOf(request.sessionId()) : "";
 
-            // 自动创建文件夹，防止服务器权限或目录不存在导致报错
-            java.nio.file.Files.createDirectories(logPath.getParent());
-
-            String logInfo = String.format("[%s] 用户: %s | 会话ID: %s | 课题: %s%n",
-                    LocalDateTime.now(), user.getUsername(), request.sessionId(), request.message());
-
-            java.nio.file.Files.write(
-                    logPath,
-                    logInfo.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                    java.nio.file.StandardOpenOption.CREATE,
-                    java.nio.file.StandardOpenOption.APPEND
-            );
-        } catch (Exception e) {
-            System.err.println("服务器存档失败: " + e.getMessage());
+        // 2. 🚀 物理拦截广告生成任务 (job-ad-gen)
+        if ("job-ad-gen".equals(sidStr)) {
+            aiService.processTemporaryTask(user, request.message(), request.modelKey(), emitter);
+            return emitter;
         }
-        // --- 极简本地存档逻辑结束 ---
 
+        // 3. 正常对话逻辑
         try {
-            aiService.streamProcessWithSession(
-                    user,
-                    request.sessionId(),
-                    request.message(),
-                    request.modelKey(),
-                    emitter
-            );
-        } catch (Exception e) {
-            emitter.completeWithError(e);
+            Long sid = Long.parseLong(sidStr);
+            // 🚀 核心改动：将请求发送给 Service，由 Service 根据 modelKey 从 application.yml 读取对应的 API 配置
+            aiService.streamProcessWithSession(user, sid, request.message(), request.modelKey(), emitter);
+        } catch (NumberFormatException e) {
+            emitter.completeWithError(new RuntimeException("无效的会话ID: " + sidStr));
         }
+
         return emitter;
     }
 
     /**
      * 新增：读取本地存档记录
-     * 地址：backend/src/main/java/suatgpt/backend/controller/AiController.java
      */
     @GetMapping("/extraction-history")
     public ResponseEntity<List<String>> getExtractionHistory() {
@@ -138,7 +123,6 @@ public class AiController {
             if (!java.nio.file.Files.exists(logPath)) {
                 return ResponseEntity.ok(List.of("暂无存档记录"));
             }
-            // 读取最后 50 行记录，防止文件过大导致内存溢出
             List<String> allLines = java.nio.file.Files.readAllLines(logPath);
             int start = Math.max(0, allLines.size() - 50);
             return ResponseEntity.ok(allLines.subList(start, allLines.size()));

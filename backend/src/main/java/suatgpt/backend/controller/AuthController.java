@@ -115,6 +115,15 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
+        try {
+            User user = userService.registerUser(request.getUsername(), request.getPassword());
+            return ResponseEntity.ok(Map.of("message", "注册成功", "username", user.getUsername()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
     /**
      * 获取当前用户信息
      * 路由: GET /api/auth/me。

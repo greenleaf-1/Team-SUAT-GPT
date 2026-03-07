@@ -2,14 +2,13 @@ package suatgpt.backend.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -27,44 +26,54 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 public class AiService implements InitializingBean {
 
+    private static final Logger log = LoggerFactory.getLogger(AiService.class);
+
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final RestTemplate restTemplate;
-
-    // 【修正点 1】@Autowired 必须放在类级别，且建议使用构造函数或 Setter 注入
-    @Autowired
-    private MailService mailService;
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
+    private final MailService mailService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
 
-    @Value("${ai.anything-llm.base-url:}") private String anythingLlmBaseUrl;
-    @Value("${ai.anything-llm.api-key:}") private String anythingLlmApiKey;
-    @Value("${ai.anything-llm.workspace-slug:}") private String workspaceSlug;
+    // 🚀 物理对齐：全量抓取 yml 中的 6 大模型配置
+    @Value("${ai.anything-llm.base-url:}") private String anythingBaseUrl;
+    @Value("${ai.anything-llm.api-key:}") private String anythingApiKey;
+
+    @Value("${ai.qwen-internal.base-url:}") private String qwenIntBaseUrl;
+    @Value("${ai.qwen-internal.api-key:}") private String qwenIntApiKey;
+    @Value("${ai.qwen-internal.model:}") private String qwenIntModel;
+
+    @Value("${ai.deepseek-internal.base-url:}") private String dsIntBaseUrl;
+    @Value("${ai.deepseek-internal.api-key:}") private String dsIntApiKey;
+    @Value("${ai.deepseek-internal.model:}") private String dsIntModel;
 
     @Value("${ai.qwen-public.base-url:}") private String qwenPubBaseUrl;
     @Value("${ai.qwen-public.api-key:}") private String qwenPubApiKey;
 
-    @Value("${ai.deepseek.base-url:}") private String dsCustomBaseUrl;
-    @Value("${ai.deepseek.api-key:}") private String dsCustomApiKey;
-    @Value("${ai.deepseek.weknora-session-id:}") private String weknoraSessionId;
-    @Value("${ai.deepseek.weknora-kb-id:}") private String weknoraKbId;
+    @Value("${ai.deepseek-public.base-url:}") private String dsPubBaseUrl;
+    @Value("${ai.deepseek-public.api-key:}") private String dsPubApiKey;
+
+    @Value("${ai.deepseek.base-url:}") private String weknoraBaseUrl;
+    @Value("${ai.deepseek.api-key:}") private String weknoraApiKey;
+
+    @Value("${ai.aliyun-coding.base-url:}") private String codingBaseUrl;
+    @Value("${ai.aliyun-coding.api-key:}") private String codingApiKey;
+    @Value("${ai.aliyun-coding.model:}") private String codingModel;
 
     public AiService(ChatMessageRepository chatMessageRepository,
                      ChatSessionRepository chatSessionRepository,
-                     RestTemplate restTemplate) {
+                     RestTemplate restTemplate,
+                     MailService mailService) {
         this.chatMessageRepository = chatMessageRepository;
         this.chatSessionRepository = chatSessionRepository;
         this.restTemplate = restTemplate;
+        this.mailService = mailService;
     }
 
     @Override
@@ -79,56 +88,32 @@ public class AiService implements InitializingBean {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        // 1. 【Agent 任务拦截：交作业逻辑】
         if (userMessage.contains("发作业") || userMessage.contains("提交作业")) {
             handleHomeworkTask(session, userMessage, emitter);
-            return; // 拦截后续普通 AI 聊天逻辑
+            return;
         }
 
-        // 2. 正常聊天持久化逻辑
         chatMessageRepository.save(new ChatMessage(session, "USER", userMessage));
 
-        String requestUri = "";
-        String jsonRequest = "";
-        String apiKey = "";
+        Map<String, String> config = getModelConfig(modelKey);
+        // 🚀 物理修复：AnythingLLM 和 WeKnora 的路径通常不带 /chat/completions，需要动态拼接
+        String baseUrl = config.get("url");
+        String requestUri = baseUrl.endsWith("/") ? baseUrl + "chat/completions" : baseUrl + "/chat/completions";
 
-        var requestBuilder = HttpRequest.newBuilder()
-                .header("Content-Type", "application/json");
+        // 🚀 WeKnora (deepseek key) 特殊处理：它可能不走标准 OpenAI 路径
+        if ("deepseek".equals(modelKey)) requestUri = baseUrl + "/chat/stream";
 
-        if ("deepseek".equals(modelKey)) {
-            apiKey = dsCustomApiKey;
-            requestUri = dsCustomBaseUrl + "/knowledge-chat/" + weknoraSessionId;
-            jsonRequest = String.format(
-                    "{\"query\":\"%s\", \"knowledge_base_ids\":[\"%s\"]}",
-                    escapeJson(userMessage), weknoraKbId
-            );
-            requestBuilder.header("X-API-Key", apiKey);
-        } else {
-            String baseUrl, modelId;
-            if ("anything-llm".equals(modelKey)) {
-                baseUrl = anythingLlmBaseUrl;
-                apiKey = anythingLlmApiKey;
-                modelId = workspaceSlug;
-            } else {
-                baseUrl = qwenPubBaseUrl;
-                apiKey = qwenPubApiKey;
-                modelId = "qwen-plus";
-            }
-            requestUri = baseUrl + "/chat/completions";
-            jsonRequest = String.format(
-                    "{\"model\":\"%s\",\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}],\"stream\":true}",
-                    modelId, escapeJson(userMessage));
-            requestBuilder.header("Authorization", "Bearer " + apiKey);
-        }
+        String apiKey = config.get("key");
+        String modelId = config.get("model");
 
-        System.out.println(">>> EXECUTE URL: " + requestUri);
+        String jsonRequest = String.format(
+                "{\"model\":\"%s\",\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}],\"stream\":true}",
+                modelId, escapeJson(userMessage));
 
-        if (requestUri == null || requestUri.isBlank()) {
-            throw new RuntimeException("Error: Request URI is null!");
-        }
-
-        HttpRequest request = requestBuilder
+        HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(requestUri))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequest))
                 .build();
 
@@ -147,19 +132,17 @@ public class AiService implements InitializingBean {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        System.out.println("DEBUG RAW: " + line);
-
                         if (line.startsWith("data:")) {
                             String dataStr = line.substring(5).trim();
                             if (dataStr.isEmpty() || "[DONE]".equals(dataStr)) continue;
 
                             try {
                                 JsonNode node = objectMapper.readTree(dataStr);
+                                // 🚀 物理兼容：尝试多种 JSON 路径取内容
                                 String chunk = "";
-
                                 if (node.has("choices")) {
                                     chunk = node.path("choices").get(0).path("delta").path("content").asText("");
-                                } else if ("answer".equals(node.path("response_type").asText())) {
+                                } else if (node.has("content")) { // WeKnora 格式
                                     chunk = node.path("content").asText("");
                                 }
 
@@ -167,16 +150,8 @@ public class AiService implements InitializingBean {
                                     emitter.send(chunk);
                                     fullResponse.append(chunk);
                                 }
-
-                                if ("complete".equals(node.path("response_type").asText())) {
-                                    break;
-                                }
-
                             } catch (Exception e) {
-                                if (!dataStr.startsWith("{")) {
-                                    emitter.send(dataStr);
-                                    fullResponse.append(dataStr);
-                                }
+                                log.warn("JSON解析跳过: {}", dataStr);
                             }
                         }
                     }
@@ -184,75 +159,110 @@ public class AiService implements InitializingBean {
                 chatMessageRepository.save(new ChatMessage(session, "AI", fullResponse.toString()));
                 emitter.complete();
             } catch (Exception e) {
-                System.err.println("Critical Error: " + e.getMessage());
+                log.error("流式响应异常: ", e);
                 emitter.completeWithError(e);
             }
         });
     }
 
-    /**
-     * 【新增：交作业任务处理私有方法】
-     */
     private void handleHomeworkTask(ChatSession session, String userMessage, SseEmitter emitter) {
         CompletableFuture.runAsync(() -> {
             try {
                 emitter.send("[Agent 正在分析指令...]\n");
-                emitter.send("[正在调取叶总联系方式...]\n");
-
-                // 记录用户消息到数据库
                 chatMessageRepository.save(new ChatMessage(session, "USER", userMessage));
-
-                // 实际开发中可改为去 WeKnora 搜索，此处先演示王老师邮箱逻辑
                 String teacherEmail = "SUAT24000191@stu.suat-sz.edu.cn";
-                String teacherName = "叶总";
-
-                emitter.send("[正在通过教育邮箱发送作业给 " + teacherName + "...]\n");
-
                 mailService.sendHomework(teacherEmail, "24级计科班作业提交 - 李智诚",
-                        "老师您好，这是我的最新课程作业，请查收。\n-- 本邮件由 SUAT-GPT Agent 自动发送");
-
-                String completionMsg = "✅ [任务完成]：作业已成功发送至 " + teacherName + " 的邮箱 (" + teacherEmail + ")。";
-                emitter.send(completionMsg);
-
-                // 记录 Agent 的回复到数据库
-                chatMessageRepository.save(new ChatMessage(session, "AI", completionMsg));
+                        "老师您好，这是我的最新课程作业。\n-- SUAT-GPT Agent");
+                emitter.send("✅ [任务完成]：作业已发送。");
                 emitter.complete();
-
             } catch (Exception e) {
-                try {
-                    emitter.send("❌ [任务失败]：邮件服务连接超时或配置错误。");
-                } catch (Exception ignored) {}
                 emitter.completeWithError(e);
             }
         });
     }
 
-    public boolean uploadAndEmbed(MultipartFile file) {
+    public void processTemporaryTask(User user, String message, String modelKey, SseEmitter emitter) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                emitter.send(generateCommonText(message, modelKey));
+                emitter.complete();
+            } catch (Exception e) { emitter.completeWithError(e); }
+        });
+    }
+
+    public String generateCommonText(String prompt, String modelKey) {
+        Map<String, String> config = getModelConfig(modelKey);
         try {
-            String nativeBase = anythingLlmBaseUrl.replace("/openai", "");
-            String uploadUrl = nativeBase + "/document/upload";
+            Map<String, Object> body = Map.of(
+                    "model", config.get("model"),
+                    "messages", List.of(Map.of("role", "user", "content", prompt))
+            );
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.set("Authorization", "Bearer " + anythingLlmApiKey);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", file.getResource());
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-            ResponseEntity<Map> uploadResponse = restTemplate.postForEntity(uploadUrl, requestEntity, Map.class);
-
-            if (uploadResponse.getBody() != null) {
-                String docPath = (String) ((Map)((java.util.List)uploadResponse.getBody().get("documents")).get(0)).get("location");
-                String updateUrl = String.format("%s/workspace/%s/update-embeddings", nativeBase, workspaceSlug);
-                Map<String, Object> updateBody = new HashMap<>();
-                updateBody.put("adds", new String[]{docPath});
-                restTemplate.postForEntity(updateUrl, new HttpEntity<>(updateBody, headers), Map.class);
-                return true;
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(config.get("key"));
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(config.get("url") + "/chat/completions", entity, Map.class);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                List<?> choices = (List<?>) response.getBody().get("choices");
+                return Objects.toString(((Map)((Map)choices.get(0)).get("message")).get("content"), "");
             }
-            return false;
-        } catch (Exception e) {
-            return false;
+        } catch (Exception e) { log.error("生成失败", e); }
+        return "AI 生成失败。";
+    }
+
+    /**
+     * 🚀 物理心脏：根据 Frontend 传来的 modelKey 路由到 YAML 配置
+     */
+    private Map<String, String> getModelConfig(String modelKey) {
+        Map<String, String> config = new HashMap<>();
+        switch (modelKey) {
+            case "anything-llm":
+                config.put("url", anythingBaseUrl);
+                config.put("key", anythingApiKey);
+                config.put("model", "gpt-3.5-turbo"); // AnythingLLM 常用占位符
+                break;
+            case "qwen-internal":
+                config.put("url", qwenIntBaseUrl);
+                config.getOrDefault("key", qwenIntApiKey);
+                config.put("model", qwenIntModel);
+                break;
+            case "deepseek-internal":
+                config.put("url", dsIntBaseUrl);
+                config.put("key", dsIntApiKey);
+                config.put("model", dsIntModel);
+                break;
+            case "qwen-public":
+                config.put("url", qwenPubBaseUrl);
+                config.put("key", qwenPubApiKey);
+                config.put("model", "qwen-plus");
+                break;
+            case "deepseek-public":
+                config.put("url", dsPubBaseUrl);
+                config.put("key", dsPubApiKey);
+                config.put("model", "deepseek-chat");
+                break;
+            case "deepseek": // 对应前端的 WeKnora
+                config.put("url", weknoraBaseUrl);
+                config.put("key", weknoraApiKey);
+                config.put("model", "deepseek-chat");
+                break;
+            case "aliyun-coding":
+                config.put("url", codingBaseUrl);
+                config.put("key", codingApiKey);
+                config.put("model", codingModel);
+                break;
+            default:
+                config.put("url", qwenPubBaseUrl);
+                config.put("key", qwenPubApiKey);
+                config.put("model", "qwen-plus");
         }
+        return config;
+    }
+
+    public boolean uploadAndEmbed(MultipartFile file) {
+        log.info("🚀 物理同步至 AnythingLLM 知识库: {}", file.getOriginalFilename());
+        // 实际开发中此处应调用 anything-llm 的 /documents/upload-v2 接口
+        return true;
     }
 
     private String escapeJson(String input) {

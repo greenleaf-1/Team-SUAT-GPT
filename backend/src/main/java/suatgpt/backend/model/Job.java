@@ -1,11 +1,9 @@
 package suatgpt.backend.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-
 @Entity
 @Table(name = "jobs")
-@Data
+
 public class Job {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,6 +13,22 @@ public class Job {
     @Column(columnDefinition = "TEXT")
     private String description; // 详细要求
     @Column(columnDefinition = "TEXT")
-    private String adText;      // AI 生成的文案
     private String status = "OPEN"; // 状态：OPEN/CLOSED
+    private String publisher;
+    private boolean needsTest; // 🚀 物理记录：是否需要笔试
+    @Column(columnDefinition = "LONGTEXT")
+    private String adText;
+
+    // 在 Job 类中补全这些方法，删除类顶部的 @Data
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getAdText() { return adText; }
+    public void setAdText(String adText) { this.adText = adText; }
 }

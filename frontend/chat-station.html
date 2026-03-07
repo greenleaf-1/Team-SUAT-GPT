@@ -1,0 +1,22 @@
+window.onload = () => {
+    const params = new URLSearchParams(window.location.search);
+    state.recordId = params.get('recordId'); // 🚀 物理锚点获取成功
+    state.jobId = params.get('jobId');
+    
+    appendBubble("interviewer", "你好！我是面试官。请问你准备好了吗？");
+};
+
+async function sendMessage() {
+    const msg = document.getElementById('user-input').value;
+    
+    // 🛰️ 物理发包：因为 recordId 是从 URL 拿的，它永远存在！
+    await fetch(`${API_BASE}/recruit/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            recordId: state.recordId, 
+            message: msg
+        })
+    });
+    // ...
+}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI面试官助教评分系统（学生提交端）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .step-inactive { display: none !important; }
+        .suat-theme { background: #75207D; } 
+        .suat-gradient { background: linear-gradient(135deg, #75207D 0%, #A044AD 100%); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        .info-tag { background: rgba(117, 32, 125, 0.1); color: #75207D; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
+
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 suat-gradient rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg">👤</div>
+                <div>
+                    <h1 id="ui-student-name" class="text-2xl font-black text-slate-800">正在同步身份...</h1>
+                    <div class="flex flex-wrap gap-2 mt-1 text-[11px] uppercase tracking-wider font-bold">
+                        <span class="info-tag">学号: <span id="ui-student-id">--</span></span>
+                        <span class="info-tag">导师: <span id="ui-mentor-name">--</span></span>
+                        <span class="info-tag">学院: <span id="ui-college">--</span></span>
+                    </div>
+                </div>
+            </div>
+            <button onclick="localStorage.clear(); location.href='login.html'" class="px-4 py-2 border rounded-full text-xs font-bold text-slate-400 hover:text-red-500 transition">安全退出</button>
+        </div>
+
+        <nav class="flex justify-between items-center mb-10 px-6 py-4 bg-white rounded-2xl shadow-sm border border-slate-100">
+            <div id="step-tag-1" class="flex flex-col items-center gap-1 text-purple-600 font-black"><span class="text-lg">01</span><span class="text-[10px] uppercase tracking-widest">选择周次</span></div>
+            <div class="h-px flex-1 bg-slate-100 mx-4"></div>
+            <div id="step-tag-2" class="flex flex-col items-center gap-1 text-slate-300"><span class="text-lg font-black">02</span><span class="text-[10px] uppercase tracking-widest">周报上传</span></div>
+            <div class="h-px flex-1 bg-slate-100 mx-4"></div>
+            <div id="step-tag-3" class="flex flex-col items-center gap-1 text-slate-300"><span class="text-lg font-black">03</span><span class="text-[10px] uppercase tracking-widest">助教质询</span></div>
+        </nav>
+
+        <section id="step-1" class="space-y-6">
+            <h2 class="text-2xl font-black text-slate-800 mb-4">学期实践进度记录</h2>
+            <div id="week-list" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                </div>
+        </section>
+
+        <section id="step-2" class="step-inactive space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-xl">
+                <button onclick="switchView(1)" class="text-slate-400 hover:text-purple-600 mb-4 flex items-center gap-2 text-sm transition-all">← 返回周次列表</button>
+                <h2 id="current-week-title" class="text-3xl font-black text-slate-800 mb-6">第 X 周汇报提交</h2>
+                
+                <div class="bg-purple-50 p-12 rounded-3xl border-2 border-dashed border-purple-200 text-center hover:border-purple-400 transition-all group">
+                    <input type="file" id="report-input" class="hidden" onchange="uploadReport(this)">
+                    <div class="mb-4 text-5xl group-hover:scale-110 transition-transform">📄</div>
+                    <p class="text-slate-700 font-bold mb-2">点击上传周报 Word 文档</p>
+                    <p class="text-slate-400 text-xs italic">上传后 AI 助教将立即进行物理审计</p>
+                    <button onclick="document.getElementById('report-input').click()" class="mt-6 suat-theme text-white px-10 py-4 rounded-2xl font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all">
+                        选择文件
+                    </button>
+                </div>
+                
+                <div id="upload-loading" class="hidden mt-6 p-6 bg-purple-50 border border-purple-200 rounded-2xl text-center">
+                    <p class="text-purple-700 font-bold animate-pulse">⚙️ AI 助教正在读取周报内容并核实物理细节...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="step-3" class="step-inactive">
+            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                <div class="suat-theme p-6 text-white">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🤖</div>
+                        <h2 class="font-black tracking-tight">AI 助教答辩窗口</h2>
+                    </div>
+                </div>
+                <div id="chat-window" class="h-[450px] overflow-y-auto p-6 bg-slate-50 space-y-6 custom-scrollbar"></div>
+                <div class="p-6 bg-white border-t border-slate-100">
+                    <div class="flex gap-4">
+                        <input type="text" id="user-input" class="flex-1 bg-slate-100 p-4 rounded-2xl border-none outline-none focus:ring-2 ring-purple-300 transition-all" placeholder="回答助教的质询..." onkeyup="if(event.key==='Enter') sendMessage()">
+                        <button onclick="sendMessage()" class="p-4 suat-theme text-white rounded-2xl shadow-lg hover:scale-105 transition-all">发送</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
+        const token = localStorage.getItem('token');
+        const studentId = localStorage.getItem('username'); // 🚀 物理关键：这里存的是登录时的学号
+        
+        let state = { currentWeek: null, recordId: null, chatCount: 0 };
+
+        window.onload = () => {
+            if (!token) window.location.href = 'login.html';
+            initWeekList();
+            fetchPersonalInfo(); // 🚀 物理点火：加载个人身份信息
+        };
+
+        // 🚀 物理同步：从后端加载个人信息 (姓名、导师、学院)
+        async function fetchPersonalInfo() {
+            try {
+                const res = await axios.get(`${API_BASE}/homework/student-info?studentId=${studentId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = res.data;
+                // 🚀 物理对齐：确保 data.xxx 对应 MentorMapping 中的属性名
+                // 如果后端字段是 mentorName，这里就写 mentorName
+                document.getElementById('ui-student-name').innerText = data.studentName || "未知学生";
+                document.getElementById('ui-student-id').innerText = data.studentId || "--";
+                document.getElementById('ui-mentor-name').innerText = data.mentorName || "--";
+                document.getElementById('ui-college').innerText = data.college || "--";
+                
+                console.log("✅ 身份识别成功:", data.studentName);
+            } catch (e) {
+                console.error("❌ 身份同步失败:", e);
+                document.getElementById('ui-student-name').innerText = "未识别身份";
+                document.getElementById('ui-student-id').innerText = studentId;
+            }
+        }
+
+        async function doRegister() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            
+            const res = await fetch(`${API_BASE}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            const data = await res.json();
+            if(res.ok) {
+                alert("✅ 注册成功！现在请点击登录。");
+            } else {
+                alert("❌ 注册失败: " + data.message);
+            }
+        }
+
+        function initWeekList() {
+            const list = document.getElementById('week-list');
+            for (let i = 1; i <= 16; i++) {
+                const div = document.createElement('div');
+                div.className = "p-6 bg-white rounded-2xl border border-slate-100 hover:border-purple-400 hover:shadow-lg transition-all cursor-pointer text-center";
+                div.onclick = () => { state.currentWeek = i; document.getElementById('current-week-title').innerText = `第 ${i} 周汇报提交`; switchView(2); };
+                div.innerHTML = `<span class="block text-2xl font-black text-slate-800">W${i}</span><span class="text-[10px] text-slate-400 font-bold">WEEK</span>`;
+                list.appendChild(div);
+            }
+        }
+
+        async function uploadReport(input) {
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('studentName', studentId); // 传学号给后端
+            formData.append('weekNumber', state.currentWeek);
+
+            document.getElementById('upload-loading').classList.remove('hidden');
+            try {
+                const res = await axios.post(`${API_BASE}/homework/upload`, formData, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                state.recordId = res.data.recordId;
+                switchView(3);
+                appendBubble("assistant", "### 📊 自动化审计报告已生成\n" + res.data.analysis);
+                appendBubble("assistant", `你好，${res.data.studentName}。你的周报已进入物理存档，现在请回答我关于本周实践的几个细节问题。`);
+            } catch (e) {
+                alert(e.response.data.error || "提交失败");
+            } finally {
+                document.getElementById('upload-loading').classList.add('hidden');
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            appendBubble("student", msg);
+            input.value = "";
+            state.chatCount++;
+
+            try {
+                const res = await axios.post(`${API_BASE}/homework/chat`, {
+                    recordId: state.recordId,
+                    message: msg,
+                    chatCount: state.chatCount
+                }, { headers: { 'Authorization': `Bearer ${token}` } });
+                appendBubble("assistant", res.data.reply);
+            } catch (e) {
+                appendBubble("assistant", "❌ 信号中断，请稍后重试");
+            }
+        }
+
+        function switchView(step) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('step-inactive'));
+            document.getElementById(`step-${step}`).classList.remove('step-inactive');
+            [1, 2, 3].forEach(i => {
+                const tag = document.getElementById(`step-tag-${i}`);
+                if (tag) tag.className = (i === step) ? 'flex flex-col items-center gap-1 text-purple-600 font-black' : 'flex flex-col items-center gap-1 text-slate-300';
+            });
+        }
+
+        function appendBubble(role, text) {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.className = role === 'student' ? 'flex justify-end' : 'flex justify-start';
+            const content = role === 'assistant' ? marked.parse(text) : text;
+            div.innerHTML = `<div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${role === 'student' ? 'bg-purple-600 text-white' : 'bg-white border border-slate-100 text-sm'}">${content}</div>`;
+            win.appendChild(div);
+            win.scrollTop = win.scrollHeight;
+        }
+    </script>
+</body>
+</html>

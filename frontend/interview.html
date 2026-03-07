@@ -2,56 +2,342 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>应聘工作站</title>
+    <title>AI面试官求职应聘端</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        .step-inactive { display: none; }
+        .step-inactive { display: none !important; }
         .suat-theme { background: #75207D; }
+        .suat-gradient { background: linear-gradient(135deg, #75207D 0%, #A044AD 100%); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .inner-shadow { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        /* Markdown 样式修饰 */
+        .prose table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .prose th, .prose td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 13px; }
+        .prose th { background: #f8fafc; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="max-w-4xl mx-auto py-10 px-4">
-        <div class="flex justify-between mb-10 text-xs font-bold text-gray-400">
-            <span id="step-tag-1" class="text-purple-600">1. 选择岗位</span>
-            <span id="step-tag-2">2. 简历初筛</span>
-            <span id="step-tag-3">3. AI 笔试</span>
-            <span id="step-tag-4">4. 专家面试</span>
-        </div>
+<body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
 
-        <section id="step-1" class="space-y-4">
-            <h2 class="text-2xl font-bold mb-6">最新招聘公告</h2>
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <nav class="flex justify-between items-center mb-12 px-6 py-4 bg-white rounded-2xl shadow-sm border border-slate-100">
+            <div id="step-tag-1" class="flex flex-col items-center gap-1 transition-all text-purple-600 font-black">
+                <span class="text-lg font-black">01</span>
+                <span class="text-[10px] uppercase tracking-widest">选择岗位</span>
+            </div>
+            <div class="h-px flex-1 bg-slate-100 mx-4"></div>
+            <div id="step-tag-2" class="flex flex-col items-center gap-1 transition-all text-slate-300">
+                <span class="text-lg font-black">02</span>
+                <span class="text-[10px] uppercase tracking-widest">材料递交</span>
+            </div>
+            <div class="h-px flex-1 bg-slate-100 mx-4"></div>
+            <div id="step-tag-3" class="flex flex-col items-center gap-1 transition-all text-slate-300">
+                <span class="text-lg font-black">03</span>
+                <span class="text-[10px] uppercase tracking-widest">专家面试</span>
+            </div>
+        </nav>
+
+        <section id="step-1" class="space-y-6">
+            <div class="flex items-end justify-between mb-4">
+                <h2 class="text-3xl font-black text-slate-800">最新招聘公告（请应聘者选择合适的岗位提交简历）</h2>
+                <p class="text-slate-400 text-sm">当前共有 <span id="job-count" class="text-purple-600 font-bold">0</span> 个开放职位</p>
+            </div>
             <div id="job-list" class="grid gap-4">
+                <div class="text-center py-20 text-slate-300 animate-pulse">正在同步最新招聘公告...</div>
+            </div>
+        </section>
+
+        <section id="step-2" class="step-inactive space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-xl">
+                <button onclick="switchView(1)" class="text-slate-400 hover:text-purple-600 mb-4 flex items-center gap-2 text-sm transition-all">← 返回公告列表</button>
+                <h2 id="current-job-title" class="text-3xl font-black text-slate-800 mb-2">加载中...</h2>
+                <div id="current-job-ad" class="text-slate-500 mb-8 border-l-4 border-purple-200 pl-4 whitespace-pre-wrap leading-relaxed italic text-sm"></div>
+                
+                <div class="bg-purple-50 p-10 rounded-3xl border-2 border-dashed border-purple-200 text-center hover:border-purple-400 transition-all group">
+                    <input type="file" id="resume-input" class="hidden" onchange="uploadResume(this)">
+                    <div class="mb-4 text-5xl group-hover:scale-110 transition-transform">📄</div>
+                    <p class="text-slate-700 font-bold mb-2">请上传您的 PDF/DOCX 简历</p>
+                    <p class="text-slate-700 font-bold mb-2">如在手机端上传，请把微信中的简历“用其他应用打开”“保存到'文件'”</p>
+                    <p class="text-slate-700 font-bold mb-2">提交后需要等待3-5分钟</p>
+                    <p class="text-slate-400 text-xs mb-6">根据评分结果，自行决定是否面试</p>
+                    <button id="upload-btn" onclick="document.getElementById('resume-input').click()" class="suat-theme text-white px-10 py-4 rounded-2xl font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all">
+                        点击上传简历并接受AI评估
+                    </button>
                 </div>
-        </section>
-
-        <section id="step-2" class="step-inactive glass-card p-8 rounded-3xl bg-white shadow-xl">
-            <h2 id="current-job-title" class="text-3xl font-black text-purple-800 mb-4"></h2>
-            <div id="current-job-ad" class="text-gray-600 mb-8 border-b pb-6 whitespace-pre-wrap"></div>
-            <div class="bg-purple-50 p-6 rounded-2xl border-2 border-dashed border-purple-200 text-center">
-                <input type="file" id="resume-input" class="hidden" onchange="uploadResume(this)">
-                <button onclick="document.getElementById('resume-input').click()" class="suat-theme text-white px-8 py-3 rounded-xl font-bold">上传 PDF 简历开启初筛</button>
+                
+                <div id="upload-loading" class="hidden mt-6 p-6 bg-purple-50 border border-purple-200 rounded-2xl animate-pulse">
+                    <div class="flex items-center justify-center gap-3 text-purple-700 font-bold">
+                        <svg class="animate-spin h-6 w-6 text-purple-600" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>AI招聘官正在对您的简历进行认真的分析与评估（预计等待5分钟，请耐心等待，请勿关闭页面，中途退出将作废）...</span>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="step-3" class="step-inactive bg-white p-10 rounded-3xl shadow-2xl">
-            <div class="flex justify-between mb-6 italic text-sm text-purple-400">
-                <span>AI 考官实时命题中...</span>
-                <span id="test-idx">第 1 / 10 题</span>
+        <section id="step-4" class="step-inactive">
+            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                <div class="suat-theme p-6 text-white flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl">🦞</div>
+                        <div>
+                            <h2 class="font-black tracking-tight">AI面试官</h2>
+                            <div id="interview-stage-tag" class="text-[10px] bg-white/20 px-2 py-0.5 rounded mt-1 uppercase">请按照面试官要求进行面试或退出</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-mono font-black"><span id="chat-count-ui">0</span><span class="text-white/40">/15</span></div>
+                        <div class="text-[10px] text-white/60">ROUND COUNT</div>
+                    </div>
+                </div>
+
+                <div id="chat-window" class="h-[500px] overflow-y-auto p-6 bg-slate-50 space-y-6 custom-scrollbar inner-shadow">
+                    </div>
+
+                <div class="p-6 bg-white border-t border-slate-100">
+                    <div class="flex gap-4">
+                        <input type="text" id="user-input" 
+                               class="flex-1 bg-slate-100 p-4 rounded-2xl border-none focus:ring-2 ring-purple-300 transition-all outline-none" 
+                               placeholder="在此输入您的专业回答..."
+                               onkeyup="if(event.key==='Enter') sendMessage()">
+                        <button onclick="sendMessage()" id="send-btn" class="p-4 suat-theme text-white rounded-2xl shadow-lg hover:rotate-2 transition-all disabled:opacity-50">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <h3 id="question-text" class="text-xl font-bold mb-6 leading-relaxed"></h3>
-            <textarea id="answer-text" class="w-full h-40 p-4 border rounded-2xl mb-4 focus:ring-2 ring-purple-100 outline-none" placeholder="请详细阐述您的见解..."></textarea>
-            <button onclick="nextQuestion()" class="w-full py-4 suat-theme text-white rounded-xl font-bold">提交并继续</button>
         </section>
 
-        <section id="step-4" class="step-inactive flex flex-col h-[600px]">
-            <div id="interview-chat" class="flex-1 overflow-y-auto space-y-4 p-4 custom-scrollbar"></div>
-            <div class="p-4 bg-white border-t flex gap-2">
-                <input id="chat-input" class="flex-1 outline-none" placeholder="请回答考官的提问...">
-                <button onclick="sendChat()" class="suat-theme text-white px-6 py-2 rounded-xl">发送</button>
-            </div>
+        <section id="step-5" class="step-inactive text-center py-20 bg-white rounded-3xl shadow-xl">
+            <div id="success-icon" class="text-8xl mb-6">✅</div>
+            <h2 id="success-title" class="text-3xl font-black text-slate-800 mb-4">投递已圆满成功</h2>
+            <p id="success-msg" class="text-slate-500 max-w-md mx-auto leading-relaxed">您的面试表现已存入系统物理档案。请关注您的邮箱通知。</p>
+            <button onclick="window.location.reload()" class="mt-10 text-purple-600 font-bold hover:underline">返回首页</button>
         </section>
     </div>
 
-    <script src="interview-logic.js"></script>
+    <script>
+        /**
+         * 🚀 SUAT 全量合拢版逻辑控制台
+         */
+        
+        // 1. 物理参数初始化
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8080/api' 
+            : `${window.location.protocol}//${window.location.host}/api`;
+
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+
+        let state = {
+            currentJob: null,
+            recordId: null,
+            chatCount: 0,
+            isLocked: false,
+            jobCache: {}
+        };
+
+        // 2. 物理点火
+        window.onload = () => {
+            if (!token) {
+                alert("物理身份缺失，请先登录主系统");
+                window.location.href = 'login.html';
+                return;
+            }
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            fetchActiveJobs();
+        };
+
+        // --- STEP 1 逻辑 ---
+        async function fetchActiveJobs() {
+            try {
+                const url = (API_BASE + '/recruit/job-stats').replace(/([^:]\/)\/+/g, "$1");
+                const res = await axios.get(url);
+                const jobs = res.data || [];
+                
+                document.getElementById('job-count').innerText = jobs.length;
+                const container = document.getElementById('job-list');
+
+                if (jobs.length === 0) {
+                    container.innerHTML = `<div class="p-10 text-center border-2 border-dashed rounded-3xl text-slate-300">⚠️ 暂无开放的物理岗位，请部长端发布。</div>`;
+                    return;
+                }
+
+                container.innerHTML = jobs.map(j => {
+                    state.jobCache[j.id] = j;
+                    return `
+                        <div onclick="handleJobClick(${j.id})" 
+                             class="p-6 bg-white rounded-2xl border border-slate-100 hover:border-purple-400 hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-black text-xl text-slate-800">${j.title}</h3>
+                                <span class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded">OPEN</span>
+                            </div>
+                            <p class="text-slate-400 text-sm mt-2 italic">点击查看公告并提交简历 →</p>
+                        </div>`;
+                }).join('');
+            } catch (e) {
+                console.error("🔥 链路异常:", e);
+                document.getElementById('job-list').innerHTML = `<div class="text-red-500">无法触达服务器，请检查 Nginx 转发配置。</div>`;
+            }
+        }
+
+        function handleJobClick(jobId) {
+            state.currentJob = state.jobCache[jobId];
+            if (!state.currentJob) return;
+
+            document.getElementById('current-job-title').innerText = state.currentJob.title;
+            document.getElementById('current-job-ad').innerHTML = (state.currentJob.adText || "暂无岗位描述").replace(/\n/g, '<br>');
+            switchView(2);
+        }
+
+        // --- STEP 2 逻辑 ---
+        async function uploadResume(input) {
+            const file = input.files[0];
+            if (!file || !state.currentJob) return;
+
+            const name = prompt("请输入您的真实姓名：", username || "");
+            const email = prompt("请输入您的邮箱（用于接收录取通知）：");
+            if (!name || !email) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('jobId', state.currentJob.id);
+            formData.append('candidateName', name);
+            formData.append('email', email);
+
+            const btn = document.getElementById('upload-btn');
+            const loading = document.getElementById('upload-loading');
+            
+            btn.disabled = true;
+            loading.classList.remove('hidden');
+
+            // 🚀 物理穿透：建立 3 分钟的耐心等待（防止 OpenClaw 解析慢）
+            try {
+                const url = (API_BASE + '/interview/upload').replace(/([^:]\/)\/+/g, "$1");
+                const res = await axios.post(url, formData, { timeout: 180000 });
+                
+                if (res.data.code === 200) {
+                    state.recordId = res.data.recordId;
+                    switchView(4);
+                    
+                    // 渲染报告
+                    appendBubble("interviewer", "### 📊 AI面试官深度评估报告\n" + res.data.analysis);
+                    appendBubble("interviewer", "您好，感谢您提交的简历，如您的评分在60分以上，请继续面试；如果低于60分，您可选择退出。请问您是否准备好进入面试环节？");
+                    
+                    // 启动录用状态心跳检测
+                    startHiredMonitor();
+                }
+            } catch (e) {
+                alert("❌ 解析超时或中断，服务器异常。");
+            } finally {
+                btn.disabled = false;
+                loading.classList.add('hidden');
+            }
+        }
+
+        // --- STEP 4 逻辑 ---
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const msg = input.value.trim();
+            if (!msg || !state.recordId || state.isLocked) return;
+
+            appendBubble("candidate", msg);
+            input.value = "";
+            state.chatCount++;
+            document.getElementById('chat-count-ui').innerText = state.chatCount;
+
+            state.isLocked = true;
+            document.getElementById('send-btn').disabled = true;
+
+            try {
+                const url = (API_BASE + '/interview/chat').replace(/([^:]\/)\/+/g, "$1");
+                const res = await axios.post(url, {
+                    recordId: state.recordId,
+                    message: msg,
+                    jobTitle: state.currentJob.title,
+                    chatCount: state.chatCount
+                });
+
+                appendBubble("interviewer", res.data.reply);
+            } catch (e) {
+                appendBubble("system", "❌ 面试信号中断，正在尝试重连...");
+            } finally {
+                state.isLocked = false;
+                document.getElementById('send-btn').disabled = false;
+            }
+        }
+
+        // --- 核心工具函数 ---
+        function switchView(step) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('step-inactive'));
+            const target = document.getElementById(`step-${step}`);
+            if (target) {
+                target.classList.remove('step-inactive');
+                updateStepTags(step);
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function updateStepTags(step) {
+            [1, 2, 4].forEach(i => {
+                const tag = document.getElementById(`step-tag-${i}`);
+                if (tag) {
+                    tag.className = (i === step) 
+                        ? 'flex flex-col items-center gap-1 transition-all text-purple-600 font-black' 
+                            : 'flex flex-col items-center gap-1 transition-all text-slate-300';
+                }
+            });
+        }
+
+        function appendBubble(role, text) {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            const isCandidate = role === 'candidate';
+            
+            div.className = isCandidate ? 'flex justify-end' : 'flex justify-start';
+            
+            // 🚀 物理对齐：使用 Marked 渲染 AI 的报告
+            const htmlContent = role === 'interviewer' ? marked.parse(text) : text;
+            
+            div.innerHTML = `
+                <div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${isCandidate ? 'bg-purple-600 text-white' : 'bg-white border border-slate-100 prose text-sm'}">
+                    ${htmlContent}
+                </div>
+            `;
+            win.appendChild(div);
+            win.scrollTop = win.scrollHeight;
+        }
+
+        // 🛰️ 录用雷达：每 5 秒探测一次部长是否点击了“录用”
+        function startHiredMonitor() {
+            const timer = setInterval(async () => {
+                if (!state.recordId) return;
+                try {
+                    const url = (API_BASE + `/recruit/candidate/${state.recordId}`).replace(/([^:]\/)\/+/g, "$1");
+                    const res = await axios.get(url);
+                    if (res.data.status === 'HIRED') {
+                        clearInterval(timer);
+                        showSuccess("🎊 录用成功！", "入职通知已发送至您的邮箱，欢迎加入我们。");
+                    } else if (res.data.status === 'REJECTED') {
+                        clearInterval(timer);
+                        showSuccess("👋 面试结束", "感谢您的参与，您的表现已录入系统人才库。期待您的下次表现！");
+                    }
+                } catch (e) { /* 静默心跳 */ }
+            }, 5000);
+        }
+
+        function showSuccess(title, msg) {
+            document.getElementById('success-title').innerText = title;
+            document.getElementById('success-msg').innerText = msg;
+            switchView(5);
+        }
+    </script>
 </body>
 </html>

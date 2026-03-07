@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI面试官助教评分系统（教师管理端）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .suat-gradient { background: linear-gradient(135deg, #75207D 0%, #a239b0 100%); }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #75207D; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<div class="max-w-7xl mx-auto px-6 py-10">
+    <div class="flex justify-between items-center mb-10">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 suat-gradient rounded-xl flex items-center justify-center text-white text-2xl font-bold">M</div>
+            <div>
+                <h1 class="text-2xl font-black text-gray-800">AI面试官助教评分系统（教师管理端）</h1>
+                <p id="mentor-info" class="text-xs text-gray-400 font-bold uppercase tracking-widest">导师: 探测中...</p>
+            </div>
+        </div>
+        <button onclick="localStorage.clear(); location.href='login.html'" class="px-4 py-2 bg-white border rounded-full text-xs font-bold hover:text-red-500 transition">安全退出</button>
+    </div>
+
+    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl min-h-[600px]">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">📊 实践报告监控雷达 <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span></h3>
+            <button onclick="loadStats()" class="text-xs text-blue-600 font-bold hover:underline">🔄 物理刷新信号</button>
+        </div>
+        
+        <div id="stat-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </div>
+</div>
+
+<div id="detail-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-6xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-[90vh]">
+        <div class="suat-gradient p-8 text-white flex justify-between items-center">
+            <h3 id="modal-name" class="text-3xl font-black">学生详情</h3>
+            <button onclick="closeModal()" class="w-10 h-10 hover:bg-white/20 rounded-full">✕</button>
+        </div>
+        <div class="flex-1 flex overflow-hidden bg-slate-50">
+            <div class="w-1/2 p-6 overflow-y-auto border-r custom-scrollbar">
+                <h4 class="font-black text-purple-700 mb-4 uppercase text-xs">📄 AI 助教审计报告</h4>
+                <div id="report-eval" class="bg-white p-6 rounded-3xl shadow-sm prose text-sm"></div>
+            </div>
+            <div class="w-1/2 p-6 overflow-y-auto custom-scrollbar">
+                <h4 class="font-black text-blue-700 mb-4 uppercase text-xs">🎙️ 质询实况监控</h4>
+                <div id="report-chat" class="bg-slate-900 text-green-400 p-6 rounded-3xl text-xs font-mono leading-relaxed h-[400px] overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
+    const token = localStorage.getItem('token');
+    let recordCache = {};
+
+    window.onload = () => {
+        if(!token) window.location.href = 'login.html';
+        loadStats();
+    };
+
+    async function loadStats() {
+        try {
+            const res = await axios.get(`${API_BASE}/homework/mentor-stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const stats = res.data;
+            const container = document.getElementById('stat-container');
+            
+            // 物理显示当前导师名 (从 Token 自动识别)
+            document.getElementById('mentor-info').innerText = `当前导师: ${localStorage.getItem('username')}`;
+
+            container.innerHTML = stats.map(r => {
+                recordCache[r.id] = r;
+                return `
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="font-black text-lg text-slate-800">${r.studentName}</h4>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">WEEKS: 第 ${r.weekNumber} 周</p>
+                        </div>
+                        <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">${r.status}</span>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl mb-4 text-xs italic text-slate-500 line-clamp-3">
+                        ${r.aiEvaluation.substring(0, 100)}...
+                    </div>
+                    <button onclick="openDetail(${r.id})" class="w-full py-2 border-2 border-slate-100 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-600 hover:text-purple-600 transition-all">进入物理透视 →</button>
+                </div>`;
+            }).join('');
+        } catch (e) { console.error("雷达故障"); }
+    }
+
+    function openDetail(id) {
+        const r = recordCache[id];
+        document.getElementById('modal-name').innerText = `${r.studentName} - 第 ${r.weekNumber} 周报告`;
+        document.getElementById('report-eval').innerHTML = marked.parse(r.aiEvaluation);
+        document.getElementById('report-chat').innerHTML = r.chatHistory ? r.chatHistory.replace(/\n/g, '<br>') : "尚未开启质询环节";
+        document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+</script>
+</body>
+</html>
