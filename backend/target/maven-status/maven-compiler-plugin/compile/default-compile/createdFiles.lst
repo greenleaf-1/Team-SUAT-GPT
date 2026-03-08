@@ -40,6 +40,7 @@ suatgpt\backend\controller\HealthController.class
 suatgpt\backend\service\MailService.class
 suatgpt\backend\model\Job.class
 suatgpt\backend\repository\UserRepository.class
+suatgpt\backend\config\UserPrincipal.class
 suatgpt\backend\repository\MentorMappingRepository.class
 suatgpt\backend\SuatGptBackendApplication.class
 suatgpt\backend\service\CsvDataInitService.class

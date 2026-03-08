@@ -12,13 +12,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #75207D; border-radius: 10px; }
         .terminal-box { background: #1a1a1a; color: #00ff41; font-family: 'Courier New', Courier, monospace; }
-        .cursor-blink::after { content: '_'; animation: blink 1s infinite; }
-        
-        /* 🚀 对齐：Markdown 渲染样式微调，确保报告表格美观 */
         #report-resume table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
         #report-resume th, #report-resume td { border: 1px solid #e2e8f0; padding: 4px 8px; text-align: left; }
-        #report-resume th { background: #f8fafc; color: #75207D; font-weight: 800; }
-        #report-resume blockquote { border-left: 4px solid #75207D; padding-left: 10px; color: #666; font-style: italic; margin: 10px 0; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen custom-scrollbar">
@@ -29,7 +24,7 @@
             <div class="w-12 h-12 suat-gradient rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">B</div>
             <div>
                 <h1 class="text-2xl font-black text-gray-800 tracking-tight">AI面试官招聘系统（企业管理端）</h1>
-                <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">请企业招聘负责人在此发布招聘信息、查看报名结果、进行录用决策</p>
+                <p class="text-[10px] text-purple-600 font-bold uppercase tracking-widest">🔒 私有管理后台：仅限查看与操作您发布的岗位</p>
             </div>
         </div>
         <div class="flex items-center gap-4">
@@ -41,29 +36,17 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div class="lg:col-span-4 lg:sticky lg:top-10 space-y-6">
             <div class="glass-card p-6 rounded-3xl shadow-xl border-t-4 border-purple-600">
-                <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-purple-700">✍️ 岗位发布/编辑</h3>
+                <h3 class="text-lg font-bold mb-4 text-purple-700">✍️ 岗位发布/编辑</h3>
                 <div class="space-y-4">
-                    <input type="text" id="job-title" placeholder="岗位名称 (如: 小学数学老师)" class="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 ring-purple-500 outline-none transition-all">
-                    <textarea id="job-desc" placeholder="输入企业（部门）介绍、岗位关键词（职责、要求），AI 将自动扩写招聘广告..." class="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl h-24 outline-none focus:ring-2 ring-purple-500 transition-all"></textarea>
+                    <input type="text" id="job-title" placeholder="岗位名称" class="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 ring-purple-500">
+                    <textarea id="job-desc" placeholder="输入核心需求..." class="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl h-24 outline-none focus:ring-2 ring-purple-500"></textarea>
                     
-                    <div id="ad-edit-area" class="hidden animate-fade-in">
-                        <label class="text-[10px] font-black text-purple-600 uppercase tracking-tighter">招聘公告已生成，请修改并确认：</label>
-                        <textarea id="ad-content" class="w-full px-4 py-3 bg-purple-50 border border-purple-200 rounded-2xl h-48 text-xs mt-1 focus:ring-2 ring-purple-500 outline-none custom-scrollbar"></textarea>
+                    <div id="ad-edit-area" class="hidden">
+                        <textarea id="ad-content" class="w-full px-4 py-3 bg-purple-50 border border-purple-200 rounded-2xl h-48 text-xs mt-1 outline-none"></textarea>
                     </div>
 
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
-                        <span class="text-sm font-bold text-gray-600">开启笔试环节（暂未启用本环节）</span>
-                        <input type="checkbox" id="needs-test" class="w-6 h-6 accent-purple-600" checked>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="generateAd()" id="gen-btn" class="col-span-2 py-4 suat-gradient text-white rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all">
-                            ✨ AI面试官生成招聘公告
-                        </button>
-                        <button onclick="publishJob()" id="pub-btn" class="hidden col-span-2 py-3 border-2 border-purple-600 text-purple-700 rounded-2xl font-bold hover:bg-purple-50 transition-all">
-                            📢 确认并发布（更新）岗位
-                        </button>
-                    </div>
+                    <button onclick="generateAd()" id="gen-btn" class="w-full py-4 suat-gradient text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all">✨ AI面试官生成招聘公告</button>
+                    <button onclick="publishJob()" id="pub-btn" class="hidden w-full py-3 border-2 border-purple-600 text-purple-700 rounded-2xl font-bold hover:bg-purple-50">📢 确认并同步岗位</button>
                     <button onclick="resetForm()" class="w-full text-[10px] text-gray-400 font-bold hover:underline">清空面板重置</button>
                 </div>
             </div>
@@ -71,18 +54,11 @@
 
         <div class="lg:col-span-8">
             <div class="glass-card p-8 rounded-3xl shadow-xl min-h-[600px]">
-                <div class="flex justify-between items-center mb-8 lg:sticky lg:top-0 bg-white/80 backdrop-blur-md z-10 py-2">
-                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        📊 已发布招聘信息：<br>
-                        待应聘提交后在此页面查看，下次登录后可从首页进入 <span id="sync-dot" class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                    </h3>
-                    <div class="flex gap-2">
-                        <button onclick="loadJobStats()" class="px-4 py-2 text-xs font-bold bg-white border rounded-full hover:shadow-md active:scale-95 transition">🔄 强制刷新</button>
-                    </div>
+                <div class="flex justify-between items-center mb-8 bg-white/80 backdrop-blur-md z-10 py-2">
+                    <h3 class="text-xl font-bold text-gray-800">📊 我的岗位看板</h3>
+                    <button onclick="loadJobStats()" class="px-4 py-2 text-xs font-bold bg-white border rounded-full hover:shadow-md transition">🔄 刷新</button>
                 </div>
-                
-                <div id="stat-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    </div>
+                <div id="stat-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
             </div>
         </div>
     </div>
@@ -95,7 +71,7 @@
                 <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl shadow-inner">👤</div>
                 <div>
                     <h3 id="modal-name" class="text-3xl font-black tracking-tighter">姓名</h3>
-                    <p id="modal-job" class="text-purple-100 font-bold tracking-widest uppercase text-[10px] mt-1">Status: <span id="modal-status-tag" class="bg-white/20 px-2 py-0.5 rounded">--</span></p>
+                    <p class="text-purple-100 font-bold tracking-widest uppercase text-[10px] mt-1">Status: <span id="modal-status-tag" class="bg-white/20 px-2 py-0.5 rounded">--</span></p>
                 </div>
             </div>
             <div class="flex gap-3">
@@ -107,37 +83,26 @@
         
         <div class="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50">
             <div class="w-full md:w-1/3 p-6 overflow-y-auto custom-scrollbar border-r border-gray-100">
-                <h4 class="font-black text-purple-700 flex items-center gap-2 mb-4 text-sm uppercase tracking-wider">📄 AI面试官简历评估报告</h4>
+                <h4 class="font-black text-purple-700 flex items-center gap-2 mb-4 text-sm uppercase tracking-wider">📄 AI面试评估报告</h4>
                 <div id="report-resume" class="bg-white p-5 rounded-3xl border border-gray-100 text-sm leading-relaxed shadow-sm"></div>
             </div>
-
             <div class="w-full md:w-1/3 p-6 overflow-y-auto custom-scrollbar border-r border-gray-100">
                 <h4 class="font-black text-green-700 flex items-center gap-2 mb-4 text-sm uppercase tracking-wider">📝 专业笔试档案</h4>
-                <div id="candidate-list" class="bg-white p-5 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
-                    <div id="report-test-container">
-                        <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase">考察题目</p>
-                            <div id="report-test-q" class="text-xs mt-1 text-gray-600 font-bold"></div>
-                        </div>
-                        <div class="border-t pt-4 mt-4">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase">答卷</p>
-                            <div id="report-test-a" class="text-xs mt-1 text-blue-600 italic"></div>
-                        </div>
+                <div id="report-test-container" class="bg-white p-5 rounded-3xl space-y-4 shadow-sm">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">考察题目</p>
+                        <div id="report-test-q" class="text-xs mt-1 text-gray-600 font-bold"></div>
                     </div>
-                    <div class="bg-green-50 p-4 rounded-2xl border-l-4 border-green-500">
-                        <p class="font-black text-green-700 text-xs">AI 综合评分结果</p>
-                        <div id="report-test-eval" class="mt-1 text-xs text-green-600 leading-relaxed"></div>
+                    <div class="border-t pt-4">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">答卷内容</p>
+                        <div id="report-test-a" class="text-xs mt-1 text-blue-600 italic"></div>
                     </div>
+                    <div id="report-test-eval" class="bg-green-50 p-4 rounded-2xl border-l-4 border-green-500 text-xs text-green-700"></div>
                 </div>
             </div>
-
             <div class="w-full md:w-1/3 p-6 flex flex-col">
-                <h4 class="font-black text-blue-700 flex items-center justify-between mb-4 text-sm uppercase tracking-wider">
-                    🎙️ 实时面试监控 <span id="round-tag" class="text-[10px] bg-blue-100 px-2 py-0.5 rounded text-blue-600 font-mono">ROUND: 0</span>
-                </h4>
-                <div id="report-chat" class="terminal-box flex-1 p-5 rounded-3xl overflow-y-auto text-[11px] leading-relaxed custom-scrollbar shadow-inner">
-                    <div class="cursor-blink">等待信号接入...</div>
-                </div>
+                <h4 class="font-black text-blue-700 flex items-center justify-between mb-4 text-sm uppercase tracking-wider">🎙️ 实时面试实况</h4>
+                <div id="report-chat" class="terminal-box flex-1 p-5 rounded-3xl overflow-y-auto text-[11px] leading-relaxed custom-scrollbar shadow-inner"></div>
             </div>
         </div>
     </div>
@@ -148,70 +113,101 @@
     const token = localStorage.getItem('token');
     const adminUser = localStorage.getItem('username') || "David部长";
     
+    let currentUserId = null; 
     let currentEditingId = null; 
     let jobCache = {};
-    let candidateCache = {}; // 🚀 缓存：存放全量候选人数据，防止 HTML 刺穿
+    let candidateCache = {}; 
     let liveMonitorTimer = null;
 
-    window.onload = () => {
+    // 🚀 核心修复：异步立即执行函数，消灭 await 报错
+    (async function init() {
         if(!token) window.location.href = 'login.html';
         document.getElementById('admin-tag').innerText = `账号: ${adminUser}`;
+
+        try {
+            // 获取当前物理身份
+            const userRes = await axios.get(`${API_BASE}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            currentUserId = userRes.data.id;
+            console.log("物理身份验证成功 ID:", currentUserId);
+        } catch(e) {
+            console.error("身份探测失败，请确认后端 /api/auth/me 接口正常");
+        }
+
         loadJobStats();
         setInterval(() => {
             if (document.getElementById('candidate-modal').classList.contains('hidden')) loadJobStats();
         }, 10000);
-    };
+    })();
 
-    // 1. 🚀 对齐：加载招聘看板 (合并自 logic.js)
     async function loadJobStats() {
         try {
-            const res = await fetch(`${API_BASE}/recruit/job-stats`, {
+            console.log("正在拉取看板，当前用户物理 ID:", currentUserId);
+            
+            const res = await axios.get(`${API_BASE}/recruit/job-stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const stats = await res.json();
-            const container = document.getElementById('stat-container');
             
-            if(!stats || stats.length === 0) {
-                container.innerHTML = '<div class="col-span-full py-20 text-center text-gray-400">目前没有正在运行的岗位</div>';
+            const allStats = res.data;
+            console.log("后端返回原始数据:", allStats);
+
+            // 🚀 物理兼容过滤：同时兼容驼峰命名和下划线命名
+            const myStats = allStats.filter(j => {
+                // 🚀 物理侦测：尝试所有可能的命名方式
+                const pId = j.publisherId || j.publisher_id || j.publisher; 
+                
+                // 调试日志：如果还是找不到，控制台会报警
+                if (pId === undefined) {
+                    console.error(`🚨 严重错误：岗位[${j.title}]中没有发现任何 publisher 字段，请检查后端实体类！`, j);
+                }
+                
+                return String(pId) === String(currentUserId);
+            });
+            
+            console.log("过滤后属于我的数据:", myStats);
+
+            const container = document.getElementById('stat-container');
+            if(!myStats || myStats.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center text-gray-400 font-bold">
+                        您尚未发布任何岗位 (检测 ID: ${currentUserId})<br>
+                        <span class="text-[10px] font-normal">提示：如果确定已发布，请检查数据库 jobs 表的 publisher_id 字段是否正确匹配。</span>
+                    </div>`;
                 return;
             }
 
-            container.innerHTML = stats.map(job => {
+            container.innerHTML = myStats.map(job => {
                 jobCache[job.id] = job;
                 return `
-                <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group mb-4">
-                    <div class="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-[5rem] -mr-8 -mt-8 transition-all group-hover:scale-110"></div>
-                    <div class="flex justify-between items-center mb-2 relative">
+                <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all relative group mb-4">
+                    <div class="flex justify-between items-center mb-2">
                         <h3 class="font-black text-xl text-purple-700">${job.title}</h3>
                         <span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-[10px] font-black">${job.status}</span>
                     </div>
-                    <p class="text-gray-500 text-xs line-clamp-2 mb-4 italic relative">${job.adText || "暂无详情"}</p>
+                    <p class="text-gray-500 text-xs line-clamp-2 mb-4 italic">${job.adText || "暂无详情"}</p>
                     
                     <div class="space-y-2 relative max-h-48 overflow-y-auto custom-scrollbar pr-2 mb-4">
-                        ${job.candidates.map(c => {
-                            candidateCache[c.id] = c; // 🚀 锁定：存入内存
-                            return `
-                            <div onclick='openCandidate(${c.id}, ${job.id})' class="flex justify-between items-center p-3 bg-slate-50 rounded-2xl cursor-pointer hover:bg-purple-600 hover:text-white transition-all">
+                        ${job.candidates ? job.candidates.map(c => {
+                            candidateCache[c.id] = c;
+                            return `<div onclick='openCandidate(${c.id}, ${job.id})' class="flex justify-between items-center p-3 bg-slate-50 rounded-2xl cursor-pointer hover:bg-purple-600 hover:text-white transition-all">
                                 <span class="text-sm font-bold">${c.candidateName}</span>
-                                <div class="text-right">
-                                    <span class="text-[10px] font-black block">${extractScore(c.resumeAnalysis)}分</span>
-                                    <span class="text-[8px] opacity-60 uppercase">${c.status}</span>
-                                </div>
+                                <span class="text-[10px] font-black uppercase">${c.status}</span>
                             </div>`;
-                        }).join('')}
-                        ${job.candidates.length === 0 ? '<p class="text-gray-300 text-[10px] italic">暂无人才报名</p>' : ''}
+                        }).join('') : ''}
                     </div>
 
-                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center relative">
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
                         <div class="flex gap-2">
-                            <button onclick="editJob(${job.id})" class="px-4 py-1 text-[10px] font-black bg-blue-50 text-blue-600 rounded-full hover:bg-blue-600 hover:text-white transition-all">📝 编辑</button>
-                            <button onclick="deleteJob(${job.id})" class="px-4 py-1 text-[10px] font-black bg-red-50 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all">🗑️ 抹除</button>
+                            <button onclick="editJob(${job.id})" class="px-4 py-1 text-[10px] font-black bg-blue-50 text-blue-600 rounded-full">📝 编辑</button>
+                            <button onclick="deleteJob(${job.id})" class="px-4 py-1 text-[10px] font-black bg-red-50 text-red-600 rounded-full">🗑️ 抹除</button>
                         </div>
-                        <span class="text-[10px] text-gray-300 font-mono">COUNT: ${job.candidateCount}</span>
                     </div>
                 </div>`;
             }).join('');
-        } catch (e) { console.error("📡 看板同步中断"); }
+        } catch (e) { 
+            console.error("📡 物理看板同步失败:", e); 
+        }
     }
 
     // 2. 🚀 对齐：展示候选人详情 (合并自 logic.js 的 Modal 触发)
@@ -291,17 +287,21 @@
     async function publishJob() {
         const title = document.getElementById('job-title').value;
         const adText = document.getElementById('ad-content').value;
-        if(!adText) return alert("广告内容不能为空");
+        if(!adText) return alert("内容不能为空");
         try {
-            const payload = { id: currentEditingId, title, adText, status: "OPEN" };
-            const res = await axios.post(`${API_BASE}/recruit/jobs/publish`, payload, { headers: { 'Authorization': `Bearer ${token}` } });
-            if(res.status === 200) { alert("🎉 AI面试官已为您发布（更新）招聘公告！"); resetForm(); loadJobStats(); }
+            // 🚀 发布时自动绑定所有权
+            const payload = { id: currentEditingId, title, adText, status: "OPEN", publisherId: currentUserId };
+            await axios.post(`${API_BASE}/recruit/jobs/publish`, payload, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            alert("🎉 发布成功！");
+            resetForm();
+            loadJobStats();
         } catch (e) { alert("💾 存储失败"); }
     }
 
     function editJob(id) {
         const job = jobCache[id];
-        if(!job) return;
         currentEditingId = id;
         document.getElementById('job-title').value = job.title;
         document.getElementById('ad-content').value = job.adText;
@@ -321,11 +321,15 @@
     }
 
     async function deleteJob(id) {
-        if (!confirm("⚠️ 警告：抹除岗位将清空所有候选人数据！确定？")) return;
+        if (!confirm("⚠️ 确定要抹除此岗位吗？此操作将清空所有候选人数据！")) return;
         try {
-            await axios.delete(`${API_BASE}/recruit/jobs/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            loadJobStats();
-        } catch (e) { alert("❌ 删除失败"); }
+            // 🚀 极简调用：不需要 headers，直接物理触达
+            await axios.delete(`${API_BASE}/recruit/jobs/${id}`);
+            alert("🗑️ 岗位已物理卸载");
+            loadJobStats(); // 刷新看板
+        } catch (e) {
+            alert("❌ 删除失败，请检查网络或后端日志");
+        }
     }
 
     function closeModal() {

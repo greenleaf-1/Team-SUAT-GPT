@@ -3,6 +3,7 @@ D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\config\InterviewPr
 D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\controller\UnifiedCourseController.java
 D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\model\HomeworkRecord.java
 D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\service\MailService.java
+D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\config\UserPrincipal.java
 D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\model\User.java
 D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\repository\JobRepository.java
 D:\Coding\Team-SUAT-GPT\backend\src\main\java\suatgpt\backend\service\AiService.java

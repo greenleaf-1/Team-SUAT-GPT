@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>AI面试官求职应聘端</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SUAT AI 招聘空间</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -10,333 +11,408 @@
         .step-inactive { display: none !important; }
         .suat-theme { background: #75207D; }
         .suat-gradient { background: linear-gradient(135deg, #75207D 0%, #A044AD 100%); }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .inner-shadow { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        /* Markdown 样式修饰 */
-        .prose table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        .prose th, .prose td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 13px; }
-        .prose th { background: #f8fafc; }
+        
+        /* ========================================================
+           🚀 终极响应式布局：手机端连贯滚动 vs 电脑端物理分屏
+           ======================================================== */
+        
+        /* 【手机端默认状态】: 瀑布流连贯长页面 */
+        .split-layout { 
+            position: fixed; inset: 0; z-index: 1000; background: white; 
+            display: block; /* 核心：块级排布，上下自然接续 */
+            width: 100vw; height: 100vh; 
+            overflow-y: auto; /* 开启全局贯通滚动 */
+            -webkit-overflow-scrolling: touch;
+        }
+        .split-left { 
+            height: auto; /* 高度由公告内容自然撑开 */
+            padding: 1.5rem; 
+            background: #fcfcfc; 
+            border-bottom: 2px dashed #cbd5e1; /* 物理分割线 */
+        }
+        .split-right { 
+            height: auto; 
+            min-height: 100vh; /* 确保交互区至少占满一屏，防止输入框悬空 */
+            display: flex; flex-direction: column; background: white; 
+        }
+        #chat-stream { 
+            flex: 1; 
+            overflow-y: visible; /* 手机端取消内部滚动，融入全局瀑布流 */
+            padding-bottom: 2rem;
+        }
+        .chat-input-area { 
+            position: sticky; bottom: 0; z-index: 50; /* 手机端：输入框永远吸附在屏幕底部 */
+            box-shadow: 0 -10px 20px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 【电脑端/大屏状态 (>1024px)】: 左右五五开独立滚动 */
+        @media (min-width: 1024px) { 
+            .split-layout { 
+                display: flex; flex-direction: row; 
+                overflow-y: hidden; /* 关闭全局滚动 */
+            } 
+            .split-left { 
+                flex: 1; height: 100%; border-bottom: none; border-right: 2px solid #f1f5f9; padding: 3rem; 
+                overflow-y: auto; /* 左侧公告独立滚动 */
+            } 
+            .split-right { 
+                flex: 1; height: 100%; min-height: auto; 
+                overflow-y: hidden; /* 右侧由聊天框控制内部滚动 */
+            } 
+            #chat-stream { 
+                overflow-y: auto; /* 电脑端聊天框独立滚动 */
+                padding-bottom: 1rem;
+            }
+            .chat-input-area { 
+                position: relative; box-shadow: none; /* 取消吸底 */
+            }
+        }
+
+        /* Markdown 渲染美化 */
+        .prose table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+        .prose th, .prose td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+        .prose th { background: #f8fafc; color: #75207D; }
+        .prose blockquote { border-left: 4px solid #75207D; padding-left: 1em; color: #64748b; font-style: italic; background: #faf5ff; padding: 10px; border-radius: 4px;}
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
+<body class="bg-slate-50 font-sans antialiased text-slate-900 custom-scrollbar">
 
-    <div class="max-w-4xl mx-auto py-8 px-4">
-        <nav class="flex justify-between items-center mb-12 px-6 py-4 bg-white rounded-2xl shadow-sm border border-slate-100">
-            <div id="step-tag-1" class="flex flex-col items-center gap-1 transition-all text-purple-600 font-black">
-                <span class="text-lg font-black">01</span>
-                <span class="text-[10px] uppercase tracking-widest">选择岗位</span>
+    <div id="lobby-view" class="step-inactive max-w-6xl mx-auto py-12 px-6">
+        <header class="flex flex-col md:flex-row justify-between items-center md:items-end mb-12 border-b border-slate-200 pb-6 gap-4">
+            <div>
+                <div class="flex items-center gap-4 mb-2 justify-center md:justify-start">
+                    <div class="w-12 h-12 suat-gradient rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">AI</div>
+                    <h1 class="text-4xl font-black text-slate-800 tracking-tight">SUAT 招募大厅</h1>
+                </div>
+                <p class="text-slate-500 text-center md:text-left">当前登录账号：<span id="user-identity" class="text-purple-600 font-bold">探测中...</span></p>
             </div>
-            <div class="h-px flex-1 bg-slate-100 mx-4"></div>
-            <div id="step-tag-2" class="flex flex-col items-center gap-1 transition-all text-slate-300">
-                <span class="text-lg font-black">02</span>
-                <span class="text-[10px] uppercase tracking-widest">材料递交</span>
-            </div>
-            <div class="h-px flex-1 bg-slate-100 mx-4"></div>
-            <div id="step-tag-3" class="flex flex-col items-center gap-1 transition-all text-slate-300">
-                <span class="text-lg font-black">03</span>
-                <span class="text-[10px] uppercase tracking-widest">专家面试</span>
-            </div>
-        </nav>
+            <button onclick="localStorage.clear(); location.href='login.html'" class="text-xs text-red-400 hover:text-red-600 font-bold">退出登录</button>
+        </header>
+        
+        <div id="job-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-20 text-slate-400 animate-pulse font-bold">正在同步全网物理岗位...</div>
+        </div>
+    </div>
 
-        <section id="step-1" class="space-y-6">
-            <div class="flex items-end justify-between mb-4">
-                <h2 class="text-3xl font-black text-slate-800">最新招聘公告（请应聘者选择合适的岗位提交简历）</h2>
-                <p class="text-slate-400 text-sm">当前共有 <span id="job-count" class="text-purple-600 font-bold">0</span> 个开放职位</p>
+    <div id="split-view" class="step-inactive split-layout">
+        
+        <div class="split-left custom-scrollbar relative">
+            <button onclick="goBackToLobby()" class="absolute top-4 right-4 text-xs bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-full font-bold transition-all text-slate-700 shadow-sm z-10">← 暂存并回大厅</button>
+            <div class="flex items-center gap-3 mb-6 pr-24">
+                <div class="w-12 h-12 suat-theme rounded-xl flex items-center justify-center text-white font-black shadow-md shrink-0">JD</div>
+                <div>
+                    <h2 id="jd-title" class="text-2xl font-black text-slate-800">加载中...</h2>
+                    <p class="text-xs text-purple-600 font-bold mt-1 bg-purple-50 px-2 py-0.5 rounded inline-block border border-purple-100">
+                        发布者：<span id="jd-publisher">--</span>
+                    </p>
+                </div>
             </div>
-            <div id="job-list" class="grid gap-4">
-                <div class="text-center py-20 text-slate-300 animate-pulse">正在同步最新招聘公告...</div>
-            </div>
-        </section>
+            <article id="jd-content" class="prose max-w-none text-slate-700 leading-relaxed"></article>
+        </div>
 
-        <section id="step-2" class="step-inactive space-y-6">
-            <div class="bg-white p-8 rounded-3xl shadow-xl">
-                <button onclick="switchView(1)" class="text-slate-400 hover:text-purple-600 mb-4 flex items-center gap-2 text-sm transition-all">← 返回公告列表</button>
-                <h2 id="current-job-title" class="text-3xl font-black text-slate-800 mb-2">加载中...</h2>
-                <div id="current-job-ad" class="text-slate-500 mb-8 border-l-4 border-purple-200 pl-4 whitespace-pre-wrap leading-relaxed italic text-sm"></div>
-                
-                <div class="bg-purple-50 p-10 rounded-3xl border-2 border-dashed border-purple-200 text-center hover:border-purple-400 transition-all group">
-                    <input type="file" id="resume-input" class="hidden" onchange="uploadResume(this)">
-                    <div class="mb-4 text-5xl group-hover:scale-110 transition-transform">📄</div>
-                    <p class="text-slate-700 font-bold mb-2">请上传您的 PDF/DOCX 简历</p>
-                    <p class="text-slate-700 font-bold mb-2">如在手机端上传，请把微信中的简历“用其他应用打开”“保存到'文件'”</p>
-                    <p class="text-slate-700 font-bold mb-2">提交后需要等待3-5分钟</p>
-                    <p class="text-slate-400 text-xs mb-6">根据评分结果，自行决定是否面试</p>
-                    <button id="upload-btn" onclick="document.getElementById('resume-input').click()" class="suat-theme text-white px-10 py-4 rounded-2xl font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all">
-                        点击上传简历并接受AI评估
+        <div class="split-right">
+            
+            <div id="action-submit" class="step-inactive flex-1 p-6 lg:p-12 flex flex-col justify-center">
+                <div class="mb-8">
+                    <h3 class="text-2xl font-black text-slate-800 mb-2">简历投递与评估</h3>
+                    <p class="text-slate-500 text-sm">选择上传文件，或直接粘贴文字。AI 将即刻为您进行匹配度分析。</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="bg-slate-50 p-6 rounded-3xl border-2 border-dashed border-slate-200 hover:border-purple-400 transition-all flex items-center gap-6 group cursor-pointer" onclick="document.getElementById('resume-file').click()">
+                        <div class="text-5xl group-hover:scale-110 transition-transform">📄</div>
+                        <div class="flex-1 text-left">
+                            <h4 class="font-black text-slate-800 text-lg">上传简历文档</h4>
+                            <p class="text-xs text-slate-400">支持 PDF / Word 格式，系统将自动提取。</p>
+                        </div>
+                        <input type="file" id="resume-file" class="hidden" onchange="submitApplication('file')">
+                    </div>
+
+                    <div class="bg-purple-50 p-6 rounded-3xl border-2 border-purple-100 flex flex-col gap-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">✍️</span>
+                            <h4 class="font-black text-slate-800">直接粘贴简历文字</h4>
+                        </div>
+                        <textarea id="resume-text" class="w-full p-4 rounded-xl border border-purple-200 text-sm outline-none focus:ring-2 ring-purple-400 custom-scrollbar bg-white shadow-inner" placeholder="在此处粘贴您的工作经历或自我评价..." rows="5"></textarea>
+                        <button onclick="submitApplication('text')" class="suat-theme text-white py-3 rounded-xl font-black shadow-md hover:opacity-90 transition-all active:scale-95">提交文字并评估</button>
+                    </div>
+                </div>
+
+                <div id="loading-overlay" class="hidden absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+                    <div class="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
+                    <p class="text-purple-700 font-bold text-lg animate-pulse">AI 考官正在深度研读履历...</p>
+                    <p class="text-slate-400 text-sm mt-2">预计耗时 1-3 分钟，请勿关闭</p>
+                </div>
+            </div>
+
+            <div id="action-interview" class="step-inactive flex-1 flex flex-col h-full">
+                <div class="suat-theme p-4 lg:p-6 text-white flex justify-between items-center shadow-md shrink-0 z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🎙️</div>
+                        <div>
+                            <h3 class="font-black tracking-wide">专家面试进行中</h3>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 bg-green-400 rounded-full animate-ping"></span>
+                                <span class="text-[10px] uppercase opacity-80 font-mono">档案 ID: #<span id="rid-display">--</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="abortAndRetry()" class="flex items-center gap-1 text-[11px] font-bold bg-red-500 hover:bg-red-600 border border-red-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        作废重投
                     </button>
                 </div>
                 
-                <div id="upload-loading" class="hidden mt-6 p-6 bg-purple-50 border border-purple-200 rounded-2xl animate-pulse">
-                    <div class="flex items-center justify-center gap-3 text-purple-700 font-bold">
-                        <svg class="animate-spin h-6 w-6 text-purple-600" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>AI招聘官正在对您的简历进行认真的分析与评估（预计等待5分钟，请耐心等待，请勿关闭页面，中途退出将作废）...</span>
-                    </div>
+                <div id="chat-stream" class="bg-slate-50 relative p-4 lg:p-8 space-y-6"></div>
+                
+                <div class="chat-input-area p-4 lg:p-6 bg-white border-t border-slate-100 flex gap-3 w-full">
+                    <input type="text" id="chat-input" class="flex-1 bg-slate-100 px-5 py-4 rounded-2xl outline-none focus:ring-2 ring-purple-300 text-sm shadow-inner" placeholder="输入回答，按回车发送..." onkeyup="if(event.key==='Enter') sendChatMsg()">
+                    <button onclick="sendChatMsg()" class="suat-theme text-white px-8 rounded-2xl font-bold shadow-lg hover:scale-105 active:scale-95 transition-all">发送</button>
                 </div>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <section id="step-4" class="step-inactive">
-            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-                <div class="suat-theme p-6 text-white flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl">🦞</div>
-                        <div>
-                            <h2 class="font-black tracking-tight">AI面试官</h2>
-                            <div id="interview-stage-tag" class="text-[10px] bg-white/20 px-2 py-0.5 rounded mt-1 uppercase">请按照面试官要求进行面试或退出</div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-mono font-black"><span id="chat-count-ui">0</span><span class="text-white/40">/15</span></div>
-                        <div class="text-[10px] text-white/60">ROUND COUNT</div>
-                    </div>
-                </div>
-
-                <div id="chat-window" class="h-[500px] overflow-y-auto p-6 bg-slate-50 space-y-6 custom-scrollbar inner-shadow">
-                    </div>
-
-                <div class="p-6 bg-white border-t border-slate-100">
-                    <div class="flex gap-4">
-                        <input type="text" id="user-input" 
-                               class="flex-1 bg-slate-100 p-4 rounded-2xl border-none focus:ring-2 ring-purple-300 transition-all outline-none" 
-                               placeholder="在此输入您的专业回答..."
-                               onkeyup="if(event.key==='Enter') sendMessage()">
-                        <button onclick="sendMessage()" id="send-btn" class="p-4 suat-theme text-white rounded-2xl shadow-lg hover:rotate-2 transition-all disabled:opacity-50">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="step-5" class="step-inactive text-center py-20 bg-white rounded-3xl shadow-xl">
-            <div id="success-icon" class="text-8xl mb-6">✅</div>
-            <h2 id="success-title" class="text-3xl font-black text-slate-800 mb-4">投递已圆满成功</h2>
-            <p id="success-msg" class="text-slate-500 max-w-md mx-auto leading-relaxed">您的面试表现已存入系统物理档案。请关注您的邮箱通知。</p>
-            <button onclick="window.location.reload()" class="mt-10 text-purple-600 font-bold hover:underline">返回首页</button>
-        </section>
+    <div id="result-view" class="step-inactive fixed inset-0 z-[10000] bg-gradient-to-br from-purple-50 to-white flex flex-col items-center justify-center p-6 text-center">
+        <div class="text-9xl mb-6 drop-shadow-xl">🎉</div>
+        <h2 class="text-4xl font-black text-slate-800 mb-2">面试圆满通过</h2>
+        <p class="text-slate-500 max-w-md">您的表现数据已物理封存。招聘方将很快与您取得联系。</p>
+        <button onclick="goBackToLobby(true)" class="mt-10 suat-theme text-white px-10 py-4 rounded-full font-black shadow-xl hover:scale-105 transition-all">返回大厅</button>
     </div>
 
     <script>
-        /**
-         * 🚀 SUAT 全量合拢版逻辑控制台
-         */
-        
-        // 1. 物理参数初始化
-        const API_BASE = window.location.hostname === 'localhost' 
-            ? 'http://localhost:8080/api' 
-            : `${window.location.protocol}//${window.location.host}/api`;
-
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
         const token = localStorage.getItem('token');
-        const username = localStorage.getItem('username');
 
-        let state = {
-            currentJob: null,
+        let engine = {
+            userId: null,
+            username: localStorage.getItem('username') || "求职者",
+            jobId: new URLSearchParams(window.location.search).get('jobId'), 
             recordId: null,
-            chatCount: 0,
-            isLocked: false,
-            jobCache: {}
+            currentJobData: null,
+            chatCount: 0
         };
 
-        // 2. 物理点火
-        window.onload = () => {
-            if (!token) {
-                alert("物理身份缺失，请先登录主系统");
-                window.location.href = 'login.html';
-                return;
-            }
+        window.onload = async () => {
+            if (!token) return window.location.href = 'login.html';
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            fetchActiveJobs();
+            
+            try {
+                const userRes = await axios.get(`${API_BASE}/auth/me`);
+                engine.userId = userRes.data.id;
+                engine.username = userRes.data.username;
+                document.getElementById('user-identity').innerText = engine.username;
+            } catch(e) { console.warn("身份拉取失败"); }
+
+            if (engine.jobId) {
+                await checkAndRouteJob(engine.jobId);
+            } else {
+                showSection('lobby-view');
+                fetchLobbyJobs();
+            }
         };
 
-        // --- STEP 1 逻辑 ---
-        async function fetchActiveJobs() {
-            try {
-                const url = (API_BASE + '/recruit/job-stats').replace(/([^:]\/)\/+/g, "$1");
-                const res = await axios.get(url);
-                const jobs = res.data || [];
-                
-                document.getElementById('job-count').innerText = jobs.length;
-                const container = document.getElementById('job-list');
+        function showSection(mainId, subId = null) {
+            ['lobby-view', 'split-view', 'result-view'].forEach(id => {
+                document.getElementById(id).classList.add('step-inactive');
+            });
+            document.getElementById(mainId).classList.remove('step-inactive');
 
-                if (jobs.length === 0) {
-                    container.innerHTML = `<div class="p-10 text-center border-2 border-dashed rounded-3xl text-slate-300">⚠️ 暂无开放的物理岗位，请部长端发布。</div>`;
-                    return;
-                }
-
-                container.innerHTML = jobs.map(j => {
-                    state.jobCache[j.id] = j;
-                    return `
-                        <div onclick="handleJobClick(${j.id})" 
-                             class="p-6 bg-white rounded-2xl border border-slate-100 hover:border-purple-400 hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer">
-                            <div class="flex justify-between items-center">
-                                <h3 class="font-black text-xl text-slate-800">${j.title}</h3>
-                                <span class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded">OPEN</span>
-                            </div>
-                            <p class="text-slate-400 text-sm mt-2 italic">点击查看公告并提交简历 →</p>
-                        </div>`;
-                }).join('');
-            } catch (e) {
-                console.error("🔥 链路异常:", e);
-                document.getElementById('job-list').innerHTML = `<div class="text-red-500">无法触达服务器，请检查 Nginx 转发配置。</div>`;
+            if (mainId === 'split-view' && subId) {
+                document.getElementById('action-submit').classList.add('step-inactive');
+                document.getElementById('action-interview').classList.add('step-inactive');
+                document.getElementById(subId).classList.remove('step-inactive');
             }
         }
 
-        function handleJobClick(jobId) {
-            state.currentJob = state.jobCache[jobId];
-            if (!state.currentJob) return;
-
-            document.getElementById('current-job-title').innerText = state.currentJob.title;
-            document.getElementById('current-job-ad').innerHTML = (state.currentJob.adText || "暂无岗位描述").replace(/\n/g, '<br>');
-            switchView(2);
+        async function fetchLobbyJobs() {
+            try {
+                const res = await axios.get(`${API_BASE}/recruit/job-stats`);
+                document.getElementById('job-list').innerHTML = (res.data || []).map(j => `
+                    <div onclick="navigateToJob(${j.id})" class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:border-purple-500 hover:shadow-xl cursor-pointer transition-all flex flex-col justify-between group">
+                        <div>
+                            <h3 class="font-black text-xl text-slate-800 mb-2 group-hover:text-purple-700 transition-colors">${j.title}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-2">${j.adText ? j.adText.replace(/#/g,'').substring(0, 80) : '点击查看岗位详情...'}</p>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-50 flex justify-between items-center">
+                            <span class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">发布者: ${j.publisher || '管理员'}</span>
+                            <span class="text-xs font-black text-slate-300 group-hover:text-purple-600">进入投递 →</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) { document.getElementById('job-list').innerHTML = "服务器连接异常"; }
         }
 
-        // --- STEP 2 逻辑 ---
-        async function uploadResume(input) {
-            const file = input.files[0];
-            if (!file || !state.currentJob) return;
+        function navigateToJob(id) {
+            history.pushState(null, '', `?jobId=${id}`);
+            engine.jobId = id;
+            checkAndRouteJob(id);
+        }
 
-            const name = prompt("请输入您的真实姓名：", username || "");
-            const email = prompt("请输入您的邮箱（用于接收录取通知）：");
+        function goBackToLobby(isFinished = false) {
+            if (isFinished) localStorage.removeItem(`suat_rid_${engine.userId}_${engine.jobId}`);
+            history.pushState(null, '', window.location.pathname);
+            engine.jobId = null; engine.recordId = null;
+            showSection('lobby-view'); fetchLobbyJobs();
+        }
+
+        async function checkAndRouteJob(jobId) {
+            try {
+                const res = await axios.get(`${API_BASE}/recruit/job-stats`);
+                const job = res.data.find(j => String(j.id) === String(jobId));
+                if (!job) { alert("此岗位已关闭"); return goBackToLobby(); }
+                
+                engine.currentJobData = job;
+                document.getElementById('jd-title').innerText = job.title;
+                document.getElementById('jd-publisher').innerText = job.publisher || '系统管理员';
+                document.getElementById('jd-content').innerHTML = marked.parse(job.adText || "暂无详细公告");
+
+                const savedRid = localStorage.getItem(`suat_rid_${engine.userId}_${jobId}`);
+                if (savedRid) {
+                    engine.recordId = savedRid;
+                    resumeInterview(); 
+                } else {
+                    showSection('split-view', 'action-submit'); 
+                }
+            } catch (e) {}
+        }
+
+        async function submitApplication(type) {
+            const name = prompt("请输入真实姓名：", engine.username);
+            const email = prompt("请输入通知接收邮箱：");
             if (!name || !email) return;
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('jobId', state.currentJob.id);
-            formData.append('candidateName', name);
-            formData.append('email', email);
+            const fd = new FormData();
+            fd.append('jobId', engine.jobId); fd.append('candidateName', name); fd.append('email', email);
 
-            const btn = document.getElementById('upload-btn');
-            const loading = document.getElementById('upload-loading');
-            
-            btn.disabled = true;
-            loading.classList.remove('hidden');
+            if (type === 'file') {
+                const fileEl = document.getElementById('resume-file');
+                if(!fileEl.files[0]) return alert("未选择文件");
+                fd.append('file', fileEl.files[0]);
+            } else {
+                const text = document.getElementById('resume-text').value;
+                if(!text.trim()) return alert("文本为空");
+                const fakeFile = new File([new Blob([text])], `${name}_简历.txt`, { type: "text/plain" });
+                fd.append('file', fakeFile); fd.append('resumeText', text);
+            }
 
-            // 🚀 物理穿透：建立 3 分钟的耐心等待（防止 OpenClaw 解析慢）
+            document.getElementById('loading-overlay').classList.remove('hidden');
+
             try {
-                const url = (API_BASE + '/interview/upload').replace(/([^:]\/)\/+/g, "$1");
-                const res = await axios.post(url, formData, { timeout: 180000 });
-                
+                const res = await axios.post(`${API_BASE}/interview/upload`, fd, { timeout: 180000 });
                 if (res.data.code === 200) {
-                    state.recordId = res.data.recordId;
-                    switchView(4);
-                    
-                    // 渲染报告
-                    appendBubble("interviewer", "### 📊 AI面试官深度评估报告\n" + res.data.analysis);
-                    appendBubble("interviewer", "您好，感谢您提交的简历，如您的评分在60分以上，请继续面试；如果低于60分，您可选择退出。请问您是否准备好进入面试环节？");
-                    
-                    // 启动录用状态心跳检测
-                    startHiredMonitor();
+                    engine.recordId = res.data.recordId;
+                    localStorage.setItem(`suat_rid_${engine.userId}_${engine.jobId}`, engine.recordId);
+                    activateInterviewZone(res.data.analysis);
                 }
-            } catch (e) {
-                alert("❌ 解析超时或中断，服务器异常。");
-            } finally {
-                btn.disabled = false;
-                loading.classList.add('hidden');
+            } catch (e) { alert("评估异常，请精简文本或重试。"); }
+            finally { document.getElementById('loading-overlay').classList.add('hidden'); }
+        }
+
+        function abortAndRetry() {
+            if (!confirm("⚠️ 确定要彻底作废当前的面试和简历吗？\n此操作将清除该岗位的历史聊天记录。")) return;
+            localStorage.removeItem(`suat_rid_${engine.userId}_${engine.jobId}`);
+            engine.recordId = null; engine.chatCount = 0;
+            document.getElementById('chat-stream').innerHTML = "";
+            if(document.getElementById('resume-file')) document.getElementById('resume-file').value = "";
+            if(document.getElementById('resume-text')) document.getElementById('resume-text').value = "";
+            showSection('split-view', 'action-submit');
+        }
+
+        async function resumeInterview() {
+            try {
+                const res = await axios.get(`${API_BASE}/recruit/candidate/${engine.recordId}`);
+                if (res.data.status === 'HIRED' || res.data.status === 'REJECTED') return showSection('result-view');
+                activateInterviewZone(null, res.data.chatHistory);
+            } catch (e) { 
+                localStorage.removeItem(`suat_rid_${engine.userId}_${engine.jobId}`);
+                showSection('split-view', 'action-submit'); 
             }
         }
 
-        // --- STEP 4 逻辑 ---
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
+        function activateInterviewZone(analysis, history = null) {
+            showSection('split-view', 'action-interview');
+            document.getElementById('rid-display').innerText = engine.recordId;
+            const win = document.getElementById('chat-stream');
+            
+            if (history && history.trim() !== "") {
+                win.innerHTML = "";
+                const turns = history.split(/(?=面试官:|应聘者:|AI:|用户:)/g);
+                turns.forEach(turn => {
+                    const text = turn.trim();
+                    if (!text) return;
+                    if (text.match(/^(应聘者|用户):/)) {
+                        renderBubble("ME", text.replace(/^(应聘者|用户):/, "").trim());
+                    } else {
+                        renderBubble("AI", text.replace(/^(面试官|AI):/, "").trim());
+                    }
+                });
+            } else if (analysis) {
+                win.innerHTML = "";
+                renderBubble("AI", "### 📊 简历深度评估\n" + analysis);
+                renderBubble("AI", `你好，**${engine.username}**。简历评估已就绪，发送任意文字即可开始正式面试。`);
+            }
+            startWatchdog();
+            
+            // 首次渲染完成强制滚到底部
+            setTimeout(() => scrollSmart(), 100);
+        }
+
+        async function sendChatMsg() {
+            const input = document.getElementById('chat-input');
             const msg = input.value.trim();
-            if (!msg || !state.recordId || state.isLocked) return;
+            if (!msg || !engine.recordId) return;
 
-            appendBubble("candidate", msg);
+            renderBubble("ME", msg);
             input.value = "";
-            state.chatCount++;
-            document.getElementById('chat-count-ui').innerText = state.chatCount;
-
-            state.isLocked = true;
-            document.getElementById('send-btn').disabled = true;
+            engine.chatCount++;
 
             try {
-                const url = (API_BASE + '/interview/chat').replace(/([^:]\/)\/+/g, "$1");
-                const res = await axios.post(url, {
-                    recordId: state.recordId,
-                    message: msg,
-                    jobTitle: state.currentJob.title,
-                    chatCount: state.chatCount
+                const res = await axios.post(`${API_BASE}/interview/chat`, {
+                    recordId: engine.recordId, message: msg, jobTitle: engine.currentJobData.title, chatCount: engine.chatCount
                 });
-
-                appendBubble("interviewer", res.data.reply);
-            } catch (e) {
-                appendBubble("system", "❌ 面试信号中断，正在尝试重连...");
-            } finally {
-                state.isLocked = false;
-                document.getElementById('send-btn').disabled = false;
-            }
+                renderBubble("AI", res.data.reply);
+            } catch (e) { renderBubble("AI", "⚠️ 物理信号中断，请重试。"); }
         }
 
-        // --- 核心工具函数 ---
-        function switchView(step) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('step-inactive'));
-            const target = document.getElementById(`step-${step}`);
-            if (target) {
-                target.classList.remove('step-inactive');
-                updateStepTags(step);
-                window.scrollTo(0, 0);
-            }
-        }
-
-        function updateStepTags(step) {
-            [1, 2, 4].forEach(i => {
-                const tag = document.getElementById(`step-tag-${i}`);
-                if (tag) {
-                    tag.className = (i === step) 
-                        ? 'flex flex-col items-center gap-1 transition-all text-purple-600 font-black' 
-                            : 'flex flex-col items-center gap-1 transition-all text-slate-300';
-                }
-            });
-        }
-
-        function appendBubble(role, text) {
-            const win = document.getElementById('chat-window');
+        function renderBubble(role, text) {
+            const win = document.getElementById('chat-stream');
             const div = document.createElement('div');
-            const isCandidate = role === 'candidate';
-            
-            div.className = isCandidate ? 'flex justify-end' : 'flex justify-start';
-            
-            // 🚀 物理对齐：使用 Marked 渲染 AI 的报告
-            const htmlContent = role === 'interviewer' ? marked.parse(text) : text;
-            
+            div.className = role === 'ME' ? 'flex justify-end' : 'flex justify-start';
             div.innerHTML = `
-                <div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${isCandidate ? 'bg-purple-600 text-white' : 'bg-white border border-slate-100 prose text-sm'}">
-                    ${htmlContent}
-                </div>
-            `;
+                <div class="max-w-[92%] p-5 rounded-2xl shadow-sm text-sm ${role === 'ME' ? 'suat-gradient text-white' : 'bg-white border border-slate-200 prose'}">
+                    ${role === 'AI' ? marked.parse(text) : text}
+                </div>`;
             win.appendChild(div);
-            win.scrollTop = win.scrollHeight;
+            scrollSmart(div);
         }
 
-        // 🛰️ 录用雷达：每 5 秒探测一次部长是否点击了“录用”
-        function startHiredMonitor() {
-            const timer = setInterval(async () => {
-                if (!state.recordId) return;
-                try {
-                    const url = (API_BASE + `/recruit/candidate/${state.recordId}`).replace(/([^:]\/)\/+/g, "$1");
-                    const res = await axios.get(url);
-                    if (res.data.status === 'HIRED') {
-                        clearInterval(timer);
-                        showSuccess("🎊 录用成功！", "入职通知已发送至您的邮箱，欢迎加入我们。");
-                    } else if (res.data.status === 'REJECTED') {
-                        clearInterval(timer);
-                        showSuccess("👋 面试结束", "感谢您的参与，您的表现已录入系统人才库。期待您的下次表现！");
-                    }
-                } catch (e) { /* 静默心跳 */ }
-            }, 5000);
+        // 🚀 核心：智能焦点追踪，适配手机端全页滚动和电脑端局部滚动
+        function scrollSmart(targetNode = null) {
+            if (targetNode && typeof targetNode.scrollIntoView === 'function') {
+                targetNode.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            } else {
+                if (window.innerWidth < 1024) {
+                    const layout = document.querySelector('.split-layout');
+                    layout.scrollTo({ top: layout.scrollHeight, behavior: 'smooth' });
+                } else {
+                    const win = document.getElementById('chat-stream');
+                    win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+                }
+            }
         }
 
-        function showSuccess(title, msg) {
-            document.getElementById('success-title').innerText = title;
-            document.getElementById('success-msg').innerText = msg;
-            switchView(5);
+        function startWatchdog() {
+            setInterval(async () => {
+                if (!engine.recordId) return;
+                const res = await axios.get(`${API_BASE}/recruit/candidate/${engine.recordId}`);
+                if (res.data.status === 'HIRED') {
+                    localStorage.removeItem(`suat_rid_${engine.userId}_${engine.jobId}`);
+                    showSection('result-view');
+                }
+            }, 6000);
         }
     </script>
 </body>

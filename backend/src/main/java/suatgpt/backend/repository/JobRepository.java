@@ -6,8 +6,9 @@ import suatgpt.backend.model.Job;
 import java.util.List;
 
 @Repository
+
+
 public interface JobRepository extends JpaRepository<Job, Long> {
-    // 🚀 物理过滤：只查询处于“开放”状态的岗位
-    List<Job> findByPublisher(String publisher);
     List<Job> findByStatus(String status);
+    List<Job> findByPublisherId(Long publisherId); // 🚀 对应 getMyJobs
 }
