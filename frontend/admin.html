@@ -2,86 +2,49 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>SUAT 总管后台 - 巡逻与配置</title>
+    <title>总管后台 - 账户巡逻中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <style>
-        .active-tab { border-bottom: 4px solid #75207D; color: #75207D; font-weight: 900; }
         .suat-theme { background: #75207D; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 lg:p-10 font-sans text-slate-900">
-
-<div class="max-w-6xl mx-auto bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden">
+    <a href="index.html" style="position: fixed; bottom: 30px; right: 30px; background: #75207D; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 4px 15px rgba(117,32,125,0.4); z-index: 9999; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="回到主页">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
+<div class="max-w-7xl mx-auto bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden">
     <header class="p-8 suat-theme text-white flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-black tracking-tighter italic">SUAT MASTER PANEL</h1>
-            <p class="text-xs opacity-70 mt-1 uppercase tracking-widest">中央控制后台 · 提示词与用户管理</p>
+            <h1 class="text-3xl font-black tracking-tighter italic">MASTER PANEL</h1>
+            <p class="text-xs opacity-70 mt-1 uppercase tracking-widest">中央控制后台 · 全服账户巡逻</p>
         </div>
-        <button onclick="logout()" class="bg-white/10 hover:bg-red-500 px-6 py-2 rounded-xl text-sm font-bold transition-all">安全退出</button>
+        <div class="flex gap-4">
+            <button onclick="window.location.href='recruit-admin.html'" class="bg-white/20 hover:bg-white/30 px-6 py-2 rounded-xl text-sm font-bold transition-all">⚙️ 前往分身配置厂</button>
+            <button onclick="logout()" class="bg-white/10 hover:bg-red-500 px-6 py-2 rounded-xl text-sm font-bold transition-all">安全退出</button>
+        </div>
     </header>
 
-    <nav class="flex bg-slate-50 border-b border-slate-100">
-        <button onclick="switchTab('users')" id="tab-users-btn" class="flex-1 py-5 active-tab transition-all">👥 用户物理状态</button>
-        <button onclick="switchTab('prompts')" id="tab-prompts-btn" class="flex-1 py-5 text-slate-400 transition-all">🔮 动态提示词配置</button>
-    </nav>
-
-    <div id="tab-users" class="tab-content active p-8">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-black text-slate-800">全服用户巡逻</h2>
-        <p class="text-[10px] text-slate-400">当前显示的 ID 即可作为招聘公告的 publisher_id 使用</p>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left">
-            <thead>
-                <tr class="text-slate-400 text-xs uppercase tracking-widest border-b">
-                    <th class="pb-4">物理 ID</th> <th class="pb-4">用户名</th>
-                    <th class="pb-4">角色</th>
-                    <th class="pb-4">最后活跃</th>
-                    <th class="pb-4">物理状态</th>
-                    <th class="pb-4">指挥操作</th>
-                </tr>
-            </thead>
-            <tbody id="user-list" class="text-sm font-medium">
-                </tbody>
-        </table>
-    </div>
-</div>
-
-    <div id="tab-prompts" class="tab-content p-8">
+    <div class="p-8">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-black text-slate-800">平行系统设置 (Tenant Configs)</h2>
-            <button onclick="openPromptModal()" class="suat-theme text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg">➕ 新增分身系统</button>
+            <h2 class="text-xl font-black text-slate-800">全服用户物理状态</h2>
+            <button onclick="fetchUsers()" class="text-xs bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg font-bold transition-all">🔄 强制刷新</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="prompt-list">
-            </div>
-    </div>
-</div>
-
-<div id="prompt-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl">
-        <h3 class="text-2xl font-black mb-6 text-slate-800">配置分身灵魂 (提示词)</h3>
-        <div class="space-y-4">
-            <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase">租户后缀 (Tenant ID - 对应 URL 后缀)</label>
-                <input type="text" id="m-tenant-id" class="w-full mt-1 bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-purple-300" placeholder="例如: recruit 或 consult">
-            </div>
-            <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase">备注 (Remark)</label>
-                <input type="text" id="m-remark" class="w-full mt-1 bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-purple-300" placeholder="例如: 财务公司专用版">
-            </div>
-            <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase">系统提示词 (System Prompt)</label>
-                <textarea id="m-prompt" class="w-full mt-1 bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-purple-300 custom-scrollbar" rows="8" placeholder="在此输入 AI 的核心指令..."></textarea>
-            </div>
-            <div class="flex gap-4 mt-6">
-                <button onclick="closePromptModal()" class="flex-1 bg-slate-100 py-4 rounded-2xl font-bold">取消</button>
-                <button onclick="savePrompt()" class="flex-1 suat-theme text-white py-4 rounded-2xl font-bold shadow-xl">物理保存</button>
-            </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-slate-400 text-xs uppercase tracking-widest border-b">
+                        <th class="pb-4">物理 ID</th> 
+                        <th class="pb-4">用户名</th>
+                        <th class="pb-4">角色</th>
+                        <th class="pb-4">物理状态</th>
+                        <th class="pb-4">指挥操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list" class="text-sm font-medium"></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -89,36 +52,28 @@
 <script>
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
     const token = localStorage.getItem('token');
-
-    // 🚀 身份硬拦截
-    if (!token) window.location.href = 'login.html?redirect=admin.html';
+    if (!token) window.location.href = 'login.html';
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-    window.onload = () => {
-        fetchUsers();
-        fetchPrompts();
-    };
+    window.onload = fetchUsers;
 
-    // ================= 用户管理逻辑 =================
-    // 更新渲染逻辑
     async function fetchUsers() {
         try {
+            document.getElementById('user-list').innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 font-bold">📡 正在穿透数据库拉取...</td></tr>`;
             const res = await axios.get(`${API_BASE}/recruit/list`);
-            const container = document.getElementById('user-list');
-            container.innerHTML = res.data.map(u => `
+            document.getElementById('user-list').innerHTML = res.data.map(u => `
                 <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                     <td class="py-5 font-mono text-purple-600 font-bold">#${u.id}</td>
                     <td>${u.username}</td>
                     <td><span class="bg-purple-50 text-purple-600 px-3 py-1 rounded-full text-[10px] font-black">${u.role}</span></td>
-                    <td class="text-slate-400 text-[10px]">${new Date(u.lastHeartbeat).toLocaleString()}</td>
                     <td>
                         <span class="${u.status === 'ACTIVE' ? 'text-green-500' : 'text-red-400'} font-bold">
                             ● ${u.status === 'ACTIVE' ? '正常活跃' : '已被注销/冻结'}
                         </span>
                     </td>
                     <td class="flex gap-3 py-5">
-                        <button onclick="resetPwd('${u.username}')" class="text-blue-500 hover:underline text-xs">重置密码</button>
-                        <button onclick="toggleStatus('${u.username}', '${u.status}')" class="${u.status === 'ACTIVE' ? 'text-red-400' : 'text-green-500'} hover:underline text-xs">
+                        <button onclick="resetPwd('${u.username}')" class="text-blue-500 hover:underline text-xs font-bold">重置密码</button>
+                        <button onclick="toggleStatus('${u.username}', '${u.status}')" class="${u.status === 'ACTIVE' ? 'text-red-400' : 'text-green-500'} hover:underline text-xs font-bold">
                             ${u.status === 'ACTIVE' ? '强制注销' : '激活账户'}
                         </button>
                     </td>
@@ -127,89 +82,26 @@
         } catch (e) { alert("无权访问用户数据或 Token 过期"); }
     }
 
-    // 🚀 指令：重置密码
     async function resetPwd(username) {
         const newPwd = prompt(`正在为 [${username}] 修改密码，请输入新密码：`, "123456");
         if (!newPwd) return;
         try {
             await axios.post(`${API_BASE}/recruit/user/reset-password`, { username, newPassword: newPwd });
-            alert("物理重写成功，新密码已生效。");
+            alert("✅ 物理重写成功，新密码已生效。");
         } catch (e) { alert("修改失败"); }
     }
 
-    // 🚀 指令：切换账户状态
+    // 🚀 核心修复：同步不及时问题
     async function toggleStatus(username, currentStatus) {
         const action = currentStatus === 'ACTIVE' ? "注销/冻结" : "重新激活";
         if (!confirm(`确定要对 [${username}] 执行 ${action} 操作吗？`)) return;
-        try {
-            await axios.post(`${API_BASE}/recruit/user/toggle-status`, { username });
-            fetchUsers(); // 刷新列表
-        } catch (e) { alert("操作失败"); }
-    }
-
-    // ================= 提示词管理逻辑 =================
-    async function fetchPrompts() {
-        try {
-            const res = await axios.get(`${API_BASE}/recruit/tenant-configs`);
-            const container = document.getElementById('prompt-list');
-            container.innerHTML = res.data.map(p => `
-                <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 relative group hover:shadow-lg transition-all">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <span class="text-[10px] font-black text-purple-600 uppercase">Tenant: /${p.tenantId}</span>
-                            <h4 class="font-black text-slate-800">${p.remark || '未命名系统'}</h4>
-                        </div>
-                        <button onclick="editPrompt(${JSON.stringify(p).replace(/"/g, '&quot;')})" class="text-xs text-slate-400 hover:text-purple-600 font-bold">编辑</button>
-                    </div>
-                    <div class="text-xs text-slate-500 line-clamp-3 italic mb-4">"${p.systemPrompt}"</div>
-                    <div class="text-[9px] text-slate-300">更新于: ${new Date(p.updatedAt).toLocaleString()}</div>
-                </div>
-            `).join('');
-        } catch (e) { console.warn("提示词表尚未建立或无权访问"); }
-    }
-
-    let currentEditId = null;
-    function openPromptModal() {
-        currentEditId = null;
-        document.getElementById('m-tenant-id').value = "";
-        document.getElementById('m-remark').value = "";
-        document.getElementById('m-prompt').value = "";
-        document.getElementById('prompt-modal').classList.remove('hidden');
-    }
-
-    function editPrompt(p) {
-        currentEditId = p.id;
-        document.getElementById('m-tenant-id').value = p.tenantId;
-        document.getElementById('m-remark').value = p.remark;
-        document.getElementById('m-prompt').value = p.systemPrompt;
-        document.getElementById('prompt-modal').classList.remove('hidden');
-    }
-
-    async function savePrompt() {
-        const payload = {
-            id: currentEditId,
-            tenantId: document.getElementById('m-tenant-id').value,
-            remark: document.getElementById('m-remark').value,
-            systemPrompt: document.getElementById('m-prompt').value
-        };
-        try {
-            await axios.post(`${API_BASE}/recruit/tenant-configs/save`, payload);
-            closePromptModal();
-            fetchPrompts();
-        } catch (e) { alert("保存失败，请检查数据库连接"); }
-    }
-
-    function closePromptModal() { document.getElementById('prompt-modal').classList.add('hidden'); }
-
-    // ================= UI 交互 =================
-    function switchTab(type) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab', 'text-slate-400'));
         
-        document.getElementById(`tab-${type}`).classList.add('active');
-        document.getElementById(`tab-${type}-btn`).classList.add('active-tab');
-        if (type === 'users') document.getElementById('tab-prompts-btn').classList.add('text-slate-400');
-        else document.getElementById('tab-users-btn').classList.add('text-slate-400');
+        try {
+            // 加上 await 强制等待后端数据库落盘
+            await axios.post(`${API_BASE}/recruit/user/toggle-status`, { username });
+            // 落盘后再拉取，绝对不会出现“延迟感”
+            await fetchUsers(); 
+        } catch (e) { alert("操作失败"); }
     }
 
     function logout() { localStorage.clear(); window.location.href = 'login.html'; }

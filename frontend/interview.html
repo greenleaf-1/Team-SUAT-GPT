@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SUAT AI 招聘空间</title>
+    <title>AI 招聘空间</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -78,13 +78,15 @@
     </style>
 </head>
 <body class="bg-slate-50 font-sans antialiased text-slate-900 custom-scrollbar">
-
+    <a href="index.html" style="position: fixed; bottom: 30px; right: 30px; background: #75207D; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 4px 15px rgba(117,32,125,0.4); z-index: 9999; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="回到主页">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
     <div id="lobby-view" class="step-inactive max-w-6xl mx-auto py-12 px-6">
         <header class="flex flex-col md:flex-row justify-between items-center md:items-end mb-12 border-b border-slate-200 pb-6 gap-4">
             <div>
                 <div class="flex items-center gap-4 mb-2 justify-center md:justify-start">
                     <div class="w-12 h-12 suat-gradient rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">AI</div>
-                    <h1 class="text-4xl font-black text-slate-800 tracking-tight">SUAT 招募大厅</h1>
+                    <h1 class="text-4xl font-black text-slate-800 tracking-tight">招募大厅</h1>
                 </div>
                 <p class="text-slate-500 text-center md:text-left">当前登录账号：<span id="user-identity" class="text-purple-600 font-bold">探测中...</span></p>
             </div>
@@ -186,9 +188,11 @@
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
         const token = localStorage.getItem('token');
 
+        // 🚀 SaaS 核心：全局 engine 增加 tenantId 解析
         let engine = {
             userId: null,
             username: localStorage.getItem('username') || "求职者",
+            tenantId: new URLSearchParams(window.location.search).get('tenant') || 'recruit', // 🚀 记录并咬死当前的暗号
             jobId: new URLSearchParams(window.location.search).get('jobId'), 
             recordId: null,
             currentJobData: null,
@@ -196,8 +200,12 @@
         };
 
         window.onload = async () => {
-            if (!token) return window.location.href = 'login.html';
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            if (!token) {
+                // 跳转登录时保留当前的 tenant 参数
+                const currentUrl = window.location.href;
+                const safeRedirectUrl = encodeURIComponent(currentUrl);
+                window.location.href = `login.html?redirect=${safeRedirectUrl}`;
+            }
             
             try {
                 const userRes = await axios.get(`${API_BASE}/auth/me`);
@@ -245,15 +253,17 @@
             } catch (e) { document.getElementById('job-list').innerHTML = "服务器连接异常"; }
         }
 
+        // 🚀 核心修复 1：进入岗位详情时，拼接 tenant 暗号
         function navigateToJob(id) {
-            history.pushState(null, '', `?jobId=${id}`);
+            history.pushState(null, '', `?tenant=${engine.tenantId}&jobId=${id}`);
             engine.jobId = id;
             checkAndRouteJob(id);
         }
 
+        // 🚀 核心修复 2：退回大厅时，保留 tenant 暗号
         function goBackToLobby(isFinished = false) {
             if (isFinished) localStorage.removeItem(`suat_rid_${engine.userId}_${engine.jobId}`);
-            history.pushState(null, '', window.location.pathname);
+            history.pushState(null, '', `?tenant=${engine.tenantId}`);
             engine.jobId = null; engine.recordId = null;
             showSection('lobby-view'); fetchLobbyJobs();
         }
@@ -285,7 +295,12 @@
             if (!name || !email) return;
 
             const fd = new FormData();
-            fd.append('jobId', engine.jobId); fd.append('candidateName', name); fd.append('email', email);
+            fd.append('jobId', engine.jobId); 
+            fd.append('candidateName', name); 
+            fd.append('email', email);
+            
+            // 🚀 SaaS 接口参数：传递分身暗号，让后端选用正确的 Prompt
+            fd.append('tenantId', engine.tenantId); 
 
             if (type === 'file') {
                 const fileEl = document.getElementById('resume-file');
@@ -295,7 +310,8 @@
                 const text = document.getElementById('resume-text').value;
                 if(!text.trim()) return alert("文本为空");
                 const fakeFile = new File([new Blob([text])], `${name}_简历.txt`, { type: "text/plain" });
-                fd.append('file', fakeFile); fd.append('resumeText', text);
+                fd.append('file', fakeFile); 
+                fd.append('resumeText', text);
             }
 
             document.getElementById('loading-overlay').classList.remove('hidden');
@@ -371,7 +387,11 @@
 
             try {
                 const res = await axios.post(`${API_BASE}/interview/chat`, {
-                    recordId: engine.recordId, message: msg, jobTitle: engine.currentJobData.title, chatCount: engine.chatCount
+                    recordId: engine.recordId, 
+                    message: msg, 
+                    jobTitle: engine.currentJobData.title, 
+                    chatCount: engine.chatCount,
+                    tenantId: engine.tenantId // 🚀 SaaS 接口参数：传递分身暗号，使用对应面试官性格
                 });
                 renderBubble("AI", res.data.reply);
             } catch (e) { renderBubble("AI", "⚠️ 物理信号中断，请重试。"); }

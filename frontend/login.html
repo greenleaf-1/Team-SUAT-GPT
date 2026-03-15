@@ -85,6 +85,7 @@
     }
 
     // 🚀 物理功能 2：点火登录
+// 🚀 物理功能 2：点火登录
     async function doLogin() {
         const user = document.getElementById('username').value.trim();
         const pass = document.getElementById('password').value.trim();
@@ -104,12 +105,24 @@
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', user); 
 
-                // 🚥 路由分流算法
-                const isStudent = user.toUpperCase().startsWith('SUAT') || 
-                                  user.toUpperCase().startsWith('XJY') || 
-                                  user.toUpperCase().startsWith('XMU');
+                // --- 🚀 核心修复：行李牌拦截检查 开始 ---
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirectUrl = urlParams.get('redirect');
 
-                window.location.replace(isStudent ? 'index.html' : 'index.html');
+                if (redirectUrl) {
+                    // 如果 URL 里有 redirect 参数，直接物理变轨，送回老地方！
+                    window.location.replace(decodeURIComponent(redirectUrl));
+                } else {
+                    // --- 原有的默认路由分流算法 ---
+                    const isStudent = user.toUpperCase().startsWith('SUAT') || 
+                                      user.toUpperCase().startsWith('XJY') || 
+                                      user.toUpperCase().startsWith('XMU');
+
+                    // (注：您原本这里的代码前后都是 index.html，如果想区分角色，可改成后台地址，比如 'admin.html' : 'index.html')
+                    window.location.replace(isStudent ? 'index.html' : 'index.html');
+                }
+                // --- 🚀 核心修复：行李牌拦截检查 结束 ---
+
             } else {
                 showError(data.message || "登录失败，请核对是否已注册");
             }

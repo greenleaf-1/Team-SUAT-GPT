@@ -6,28 +6,49 @@
   <component name="ChangeListManager">
     <list default="true" id="b80ac018-8470-4c71-931c-e49b4f478bff" name="Changes" comment="SUAT-GPT v5.5&#10; &#10;“双创实践”智能审计与审批系统&#10;&#10;背景：一次对“低效物理协议”的降维打击&#10;&#10;在传统的双创实践课考核中，学生面临着极度繁琐的物理流程：每周填表、跨校区寻找出差频繁的导师进行物理签名、手动汇总 16 周的纸质单据。这不仅是对导师时间的极大消耗，更是对教务效率的某种“技术倒退”。&#10;&#10;SUAT-GPT v5.5 的诞生，源于对这种“纸张与碳粉”式教务逻辑的愤怒。&#10;&#10;🛠️ 核心功能逻辑：从“物理签名”到“数字审计”&#10;1. 智能身份锚定与图谱映射&#10;系统内置了 2024级本科生选专业全量数据图谱。&#10;物理实现：无需手动注册，系统根据学号自动识别学生身份，并精准挂载其对应的学术导师（支持双导师逻辑）。&#10;极简入口：学号即账户，实现“登录即识别，识别即权限”。&#10;&#10;2. AI 自动化审计 Agent (已上线)&#10;取代了“导师人工看一眼”的初级质询逻辑。&#10;AI 质询：学生提交周报后，AI 智能体根据其实践内容的真实性、工作量、逻辑性进行即时审计。&#10;自动打分：系统根据 16 周考核指标，自动折算每份表 5 分的基础分，并在后台生成 AI 评价，为导师提供决策参考。&#10;&#10;未来可能会增加以下功能：&#10;1. 导师电子审批流&#10;彻底物理终结“找老师签字”的痛苦。&#10;数字化签字：导师在指挥台一键点击“批准（Approve）”，即视为完成电子签名。&#10;级联审批逻辑：支持“竞赛导师 -&gt; 学术导师”的顺序流转。只有经过导师确认后的高保质数据，才会最终汇总至课程负责老师。&#10;&#10;2. 实践成果价值评估 (五级制校准)&#10;针对 20 分的加分项（论文、竞赛、成果），系统提供手动校准入口。&#10;分制转换：支持将百分制平滑转换为教务要求的“优、良、中、及格、不及格”五级制。&#10;历史回溯：学生可随时查看 16 周的轨迹记录，所有评分记录物理留痕，不可篡改。&#10;&#10;💎 愿景：重塑教务生产力&#10;当教务系统还在纠结于物理纸张的流转和时间成本的损耗时，SUAT-GPT 已经完成了从提交、审计到审批的全链路数字化闭环。&#10;&#10;深理工的教务系统招标居然预算270万，我们团队愿意27万就搞定。剩下十分之九的资金用来改善学生条件，不好吗？&#10;&#10;“我们收取的不是 270 万的昂贵合同，而是通过代码对效率的物理致敬。”">
       <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/UserPrincipal.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/ConsultController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/ConsultConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/ConsultRecord.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/TenantConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/ConsultConfigRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/ConsultRecordRepository.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/TenantConfigRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/ConsultService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/config/WebSecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/InterviewController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/InterviewController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/JobController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/JobController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/RecruitController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/controller/RecruitController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/Job.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/model/Job.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/JobRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/repository/JobRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/InterviewService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/InterviewService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/MailService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/MailService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/suatgpt/backend/service/UserService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/WebSecurityConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/config/WebSecurityConfig.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/InterviewController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/InterviewController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/JobController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/JobController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/RecruitController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/controller/RecruitController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/Job.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/model/Job.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/repository/JobRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/repository/JobRepository.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/InterviewService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/InterviewService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/MailService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/MailService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/UserService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/suatgpt/backend/service/UserService.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar.original" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/suat-gpt-backend-0.0.1-SNAPSHOT.jar.original" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/admin.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/admin.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/ai-chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/ai-chat.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/ai-course.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/ai-course.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/interview-logic.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/interview.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/interview.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/recruit-logic.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/recruit.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/recruit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/student.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/student.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -144,6 +165,9 @@
       <workItem from="1772712227218" duration="30747000" />
       <workItem from="1772849326969" duration="10954000" />
       <workItem from="1772934600159" duration="14068000" />
+      <workItem from="1773046008007" duration="778000" />
+      <workItem from="1773477504368" duration="2121000" />
+      <workItem from="1773534772161" duration="16556000" />
     </task>
     <task id="LOCAL-00001" summary="SUAT-GPT v5.1&#10;&#10;集成招聘智能体（初步）（含领导端和应聘者端）、AI制课智能体、对话智能体、管理员系统，加入MySQL数据库。&#10;SUAT-GPT v5.0">
       <option name="closed" value="true" />

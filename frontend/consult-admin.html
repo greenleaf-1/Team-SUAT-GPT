@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI咨询系统 - 物理控制台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-8 font-sans text-slate-800">
+    <a href="index.html" style="position: fixed; bottom: 30px; right: 30px; background: #75207D; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 4px 15px rgba(117,32,125,0.4); z-index: 9999; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="回到主页">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter">🔮 咨询大盘控制台</h1>
+                <p class="text-sm text-slate-500 mt-1">统管各个分支的 UI 界面与 AI 漏斗话术</p>
+            </div>
+            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">➕ 新增咨询分身</button>
+        </div>
+
+        <div id="config-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="col-span-full text-center py-10 text-slate-400 font-bold">正在拉取物理配置...</div>
+        </div>
+    </div>
+
+    <div id="config-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-blue-600 p-6 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-xl font-black">⚙️ 咨询分身全量配置</h3>
+                <button onclick="closeModal()" class="text-2xl hover:text-red-300 transition">✕</button>
+            </div>
+            
+            <div class="p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">
+                
+                <div class="grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase">路由后缀 (Tenant ID)</label>
+                        <input type="text" id="m-tenant-id" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-blue-500" placeholder="如: student_center">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase">系统备注</label>
+                        <input type="text" id="m-remark" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-blue-500" placeholder="如: 就业指导中心专属">
+                    </div>
+                </div>
+
+                <div class="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+                    <h4 class="font-black text-orange-600 mb-4">🎨 前端 UI 界面动态注入</h4>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="text-xs font-black text-orange-500">主标题 (显示在页面顶部)</label>
+                            <input type="text" id="m-ui-title" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-orange-400" placeholder="如: AI 职业规划大师">
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-orange-500">欢迎引导语</label>
+                            <input type="text" id="m-ui-welcome" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-orange-400" placeholder="如: 上传简历，解锁你的专属职业路线">
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-orange-500">核心按钮文字</label>
+                            <input type="text" id="m-ui-btn" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-orange-400" placeholder="如: 🚀 开启深度职业体检">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50 p-6 rounded-2xl border border-purple-100">
+                    <h4 class="font-black text-purple-700 mb-4">🧠 AI 咨询师三段式漏斗指令</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-black text-purple-600">阶段 1: 破冰指令 (必含 %s 代表简历路径)</label>
+                            <textarea id="m-prompt-1" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-purple-400 custom-scrollbar text-sm" rows="3" placeholder="请阅读简历 '%s'。向候选人打招呼，并提出第1个深度职业探索问题。"></textarea>
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-purple-600">阶段 2: 追问指令 (必含 %s %s %d 分别代表 历史、当前回答、当前问题数)</label>
+                            <textarea id="m-prompt-2" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-purple-400 custom-scrollbar text-sm" rows="3" placeholder="历史记录：%s\n用户说：%s\n请根据回答，继续提出第 %d 个问题（共5个）。"></textarea>
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-purple-600">阶段 3: 终局报告指令 (必含 %s 代表所有历史记录)</label>
+                            <textarea id="m-prompt-3" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-purple-400 custom-scrollbar text-sm" rows="3" placeholder="结合所有对话记录：%s\n生成一份专业的【个人优势评估与岗位推荐报告】，使用Markdown。"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="p-6 bg-slate-50 border-t shrink-0 flex gap-4">
+                <button onclick="closeModal()" class="flex-1 py-3 bg-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-300">取消</button>
+                <button onclick="saveConfig()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700">💾 物理刻录并生效</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
+        
+        // 🚀 核心修复 1：从本地缓存抓取物理通行证
+        const token = localStorage.getItem('token');
+        let currentEditId = null;
+
+        // 🚀 核心修复 2：如果没有通行证，直接踢回登录页
+        window.onload = () => {
+            if (!token) {
+                alert("未检测到登录状态，请先登录！");
+                window.location.href = 'login.html';
+                return;
+            }
+            loadConfigs();
+        };
+
+        async function loadConfigs() {
+            try {
+                // 🚀 核心修复 3：在请求头中高举通行证
+                const res = await axios.get(`${API_BASE}/consult/admin/configs`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const container = document.getElementById('config-list');
+                if(res.data.length === 0) {
+                    container.innerHTML = `<div class="col-span-full py-10 text-center text-slate-400 font-bold">暂无配置，请点击右上角新增</div>`;
+                    return;
+                }
+                container.innerHTML = res.data.map(c => `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-black uppercase">/${c.tenantId}</span>
+                                <h3 class="font-black text-lg mt-2">${c.remark || '未命名系统'}</h3>
+                            </div>
+                            <button onclick='editConfig(${JSON.stringify(c).replace(/'/g, "&#39;")})' class="text-sm font-bold text-blue-600 hover:underline">编辑配置</button>
+                        </div>
+                        <div class="text-xs text-slate-500 mb-1"><span class="font-bold text-orange-500">UI 标题:</span> ${c.uiPageTitle || '默认'}</div>
+                        <div class="text-xs text-slate-500 line-clamp-2"><span class="font-bold text-purple-500">出报告指令:</span> ${c.promptReport || '默认'}</div>
+                    </div>
+                `).join('');
+            } catch (e) { 
+                console.error(e);
+                alert("获取配置失败，请检查登录状态或后端日志。"); 
+            }
+        }
+
+        function openModal() {
+            currentEditId = null;
+            document.querySelectorAll('#config-modal input, #config-modal textarea').forEach(el => el.value = '');
+            document.getElementById('config-modal').classList.remove('hidden');
+        }
+
+        function editConfig(c) {
+            currentEditId = c.id;
+            document.getElementById('m-tenant-id').value = c.tenantId || '';
+            document.getElementById('m-remark').value = c.remark || '';
+            document.getElementById('m-ui-title').value = c.uiPageTitle || '';
+            document.getElementById('m-ui-welcome').value = c.uiWelcomeMsg || '';
+            document.getElementById('m-ui-btn').value = c.uiBtnText || '';
+            document.getElementById('m-prompt-1').value = c.promptGreeting || '';
+            document.getElementById('m-prompt-2').value = c.promptInterview || '';
+            document.getElementById('m-prompt-3').value = c.promptReport || '';
+            document.getElementById('config-modal').classList.remove('hidden');
+        }
+
+        async function saveConfig() {
+            const payload = {
+                id: currentEditId,
+                tenantId: document.getElementById('m-tenant-id').value,
+                remark: document.getElementById('m-remark').value,
+                uiPageTitle: document.getElementById('m-ui-title').value,
+                uiWelcomeMsg: document.getElementById('m-ui-welcome').value,
+                uiBtnText: document.getElementById('m-ui-btn').value,
+                promptGreeting: document.getElementById('m-prompt-1').value,
+                promptInterview: document.getElementById('m-prompt-2').value,
+                promptReport: document.getElementById('m-prompt-3').value
+            };
+            if(!payload.tenantId) return alert("必须填写路由后缀 (Tenant ID)！");
+
+            try {
+                // 🚀 核心修复 4：保存时也要高举通行证
+                await axios.post(`${API_BASE}/consult/admin/config/save`, payload, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                closeModal();
+                loadConfigs();
+            } catch (e) { 
+                console.error(e);
+                alert("保存失败，可能权限不足！"); 
+            }
+        }
+
+        function closeModal() { document.getElementById('config-modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>

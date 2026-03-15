@@ -83,9 +83,10 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/recruit/job-stats").permitAll()
                         .requestMatchers("/login", "/api/auth/**", "/api/recruit/**", "/api/interview/**").permitAll()
                         .requestMatchers("/h2-console/**", "/error", "/public/**").permitAll()
-                        .requestMatchers("/api/course/**").permitAll() // 🚀 物理放行：任何人都能萃取
+                        .requestMatchers("/api/course/**", "/api/consult/upload","/api/consult/chat","/api/consult/config").permitAll() // 🚀 物理放行：任何人都能萃取
                         .requestMatchers("/api/jobs/public-list").permitAll() // 🚀 物理放行：任何人都能萃取
                         .requestMatchers("/api/homework/**").authenticated()
+
 
 
                         .anyRequest().authenticated()

@@ -14,17 +14,31 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
           // 🚀 物理清单：必须手动列出项目根目录下的每一个 HTML 入口
           input: {
+            // 🏠 基础门户
             main: resolve(__dirname, 'index.html'),
             login: resolve(__dirname, 'login.html'),
-            recruit: resolve(__dirname, 'recruit.html'),
-            admin: resolve(__dirname, 'admin.html'),
-            interview: resolve(__dirname, 'interview.html'),
+
+            // 💼 招聘系统 (Recruit 系列)
+            recruit: resolve(__dirname, 'recruit.html'),          // 企业管理端
+            'recruit-admin': resolve(__dirname, 'recruit-admin.html'), // SaaS 分身配置厂 (新)
+            interview: resolve(__dirname, 'interview.html'),      // 求职应聘端
+            'job-detail': resolve(__dirname, 'job-detail.html'),
+
+            // 🔮 咨询系统 (Consult 系列)
+            consult: resolve(__dirname, 'consult.html'),          // AI 咨询用户端 (新)
+            'consult-admin': resolve(__dirname, 'consult-admin.html'), // AI 咨询管理端 (新)
+
+            // 🎓 教育系统 (Education 系列)
             student: resolve(__dirname, 'student.html'),
             mentor: resolve(__dirname, 'mentor.html'),
-            'ai-chat': resolve(__dirname, 'ai-chat.html'),
             'ai-course': resolve(__dirname, 'ai-course.html'),
+
+            // 💬 聊天系统 (Chat 系列)
+            'ai-chat': resolve(__dirname, 'ai-chat.html'),
             'chat-station': resolve(__dirname, 'chat-station.html'),
-            'job-detail': resolve(__dirname, 'job-detail.html')
+
+            // 🛡️ 系统管理 (Admin 系列)
+            admin: resolve(__dirname, 'admin.html'),              // 账户巡逻中心 (已拆分)
           },
           // 🚀 物理固化：强制让打包后的文件名保持清晰，方便在宝塔排查问题
           output: {

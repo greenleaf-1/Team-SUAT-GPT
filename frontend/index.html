@@ -1,13 +1,245 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI面试官招聘系统</title>
+    <title>AI面试官 | 招聘面试测评培训系统</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-gray-50">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* 自定义字体， Inter paired with bold, clean headers */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* 页面背景微妙的网格纹理，增强 workstations 氛围 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(229, 231, 235, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(229, 231, 235, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        /* 优化后的卡片过渡效果，更优雅 */
+        .system-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 文本在卡片悬停时出现的效果 */
+        .system-card .explore-text {
+            transform: translateY(10px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+        .system-card:hover .explore-text {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50/50 flex flex-col min-h-screen">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // 🚀 核心修复：物理隔离的 Icon 渲染器
+        // 彻底解决 React 虚拟 DOM 与原生 Lucide 替换操作的冲突
+        const Icon = ({ name, size = 32, className = "" }) => {
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                if (containerRef.current) {
+                    // 1. 在隔离罩内注入原生占位符
+                    containerRef.current.innerHTML = `<i data-lucide="${name}"></i>`;
+                    // 2. 仅对该隔离罩内部执行图标物理转换，不影响 React 其他部分
+                    window.lucide.createIcons({
+                        root: containerRef.current,
+                        attrs: {
+                            class: className,
+                            width: size,
+                            height: size
+                        }
+                    });
+                }
+            }, [name, size, className]);
+
+            // React 只负责渲染这个不会被替换的空壳 span
+            return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState({ username: '加载中...', role: 'GUEST' });
+            const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+
+            useEffect(() => {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = 'login.html?redirect=index.html';
+                    return;
+                }
+
+                fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.username) setUser(data);
+                })
+                .catch(() => {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                });
+            }, []);
+
+            const logout = () => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            };
+
+            const allSystems = [
+                // 💼 1. 招聘系统企业管理端 (业务模块)
+                { id: 'recruit', title: 'AI面试官招聘系统管理端', desc: '发布岗位、查看结果、录用决策', icon: 'briefcase', color: 'bg-purple-50', iconColor: 'text-purple-600', 
+                  roles: ['ADMIN', 'SUPERADMIN'], link: 'recruit.html' },
+                
+                // 👤 2. 招聘系统应聘端 (公共模块)
+                { id: 'interview', title: 'AI面试官招聘系统应聘端', desc: '浏览岗位、上传简历、开启AI面试', icon: 'terminal', color: 'bg-indigo-50', iconColor: 'text-indigo-600', 
+                  roles: ['CANDIDATE', 'ADMIN', 'SUPERADMIN'], link: 'interview.html' },
+                  
+                // 👤 7. AI职业测评用户端 (公共模块)
+                { id: 'consult', title: 'AI 面试官测评与职业规划大师', desc: '提交诉求文档，获取专业AI诊断建议', icon: 'message-circle', color: 'bg-pink-50', iconColor: 'text-pink-600', 
+                  roles: ['CANDIDATE', 'ADMIN', 'SUPERADMIN'], link: 'consult.html?tenant=student' },
+                  
+                // 👤 8. AI企业培训开发平台 (公共模块)
+                { id: 'course', title: 'AI企业培训开发平台', desc: 'AI辅助生成专业培训课程', icon: 'book-open', color: 'bg-blue-50', iconColor: 'text-blue-600', 
+                  roles: ['CANDIDATE', 'ADMIN', 'SUPERADMIN'], link: 'ai-course.html' },
+                
+                // 👤 10. AI面试官对话系统 (公共模块)
+                { id: 'aichat', title: 'AI面试官对话系统', desc: '私有化定制知识库对话系统', icon: 'cpu', color: 'bg-teal-50', iconColor: 'text-teal-600', 
+                  roles: ['CANDIDATE', 'ADMIN', 'SUPERADMIN'], link: 'ai-chat.html' },
+                  
+                // 🔒 9. 领导决策数据罗盘 (禁区：仅限 SUPERADMIN)
+                { id: 'admin', title: '领导决策数据罗盘', desc: '查看成员状态与系统概况', icon: 'user-check', color: 'bg-green-50', iconColor: 'text-green-600', 
+                  roles: ['SUPERADMIN'], link: 'admin.html' },
+                  
+                // 👤 4. AI面试作业学生端 (公共模块)
+                { id: 'student-report', title: 'AI面试作业学生端', desc: '提交作业、报告，接受AI质询', icon: 'file-text', color: 'bg-orange-50', iconColor: 'text-orange-600', 
+                  roles: ['CANDIDATE', 'ADMIN', 'SUPERADMIN'], link: 'student.html' },
+                
+                // 💼 5. AI面试作业教师端 (业务模块)
+                { id: 'mentor-platform', title: 'AI面试作业教师端', desc: '审阅周报、查看AI审计报告', icon: 'presentation', color: 'bg-rose-50', iconColor: 'text-rose-600', 
+                  roles: ['ADMIN', 'SUPERADMIN'], link: 'mentor.html' },
+                  
+                // 🔒 3. SaaS 分身配置厂 (禁区：仅限 SUPERADMIN)
+                { id: 'recruit-admin', title: 'SaaS 招聘系统分身配置厂', desc: '配置机构UI、AI大脑及发信引擎', icon: 'settings', color: 'bg-slate-50', iconColor: 'text-slate-600', 
+                  roles: ['SUPERADMIN'], link: 'recruit-admin.html' },
+                
+                // 🔒 6. AI职业测评管理端 (禁区：仅限 SUPERADMIN)
+                { id: 'consult-admin', title: 'AI 面试官测评与职业规划大师管理端', desc: '建立知识库，配置咨询数字人', icon: 'layers', color: 'bg-cyan-50', iconColor: 'text-cyan-600', 
+                  roles: ['SUPERADMIN'], link: 'consult-admin.html' }
+            ];
+
+            return (
+                <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col min-h-screen">
+                    <div className="flex justify-between items-center mb-16 border-b border-gray-100 pb-10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-3xl bg-purple-600 flex items-center justify-center shadow-lg transform -rotate-12">
+                                <Icon name="bot" size={32} className="text-white transform rotate-12" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-extrabold text-gray-950 uppercase tracking-tighter mb-1">
+                                    AI面试官
+                                </h1>
+                                <p className="text-base text-gray-500 font-medium">招聘面试测评培训系统</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 p-1 bg-white rounded-full border border-gray-100 shadow-chip">
+                            <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-full">
+                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-700 uppercase">
+                                    {user.username.slice(0, 1) || '加载'}
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-950 font-semibold">{user.username}</p>
+                                    <span className="text-[10px] bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-black uppercase tracking-wider">{user.role}</span>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={logout} 
+                                className="flex items-center gap-2.5 px-6 py-3.5 text-sm text-red-600 font-bold hover:bg-red-50 rounded-full transition-all group"
+                            >
+                                <Icon name="log-out" size={18} className="text-red-500 group-hover:-translate-x-0.5 transition-transform" /> 安全退出
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+                        {allSystems.map((sys) => {
+                            const hasAccess = sys.roles.includes(user.role);
+                            return (
+                                <div 
+                                    key={sys.id}
+                                    onClick={() => hasAccess && (window.location.href = sys.link)}
+                                    className={`system-card p-8 rounded-[2.5rem] bg-white border-2 flex flex-col justify-between h-full relative overflow-hidden group shadow-card hover:shadow-hover ${
+                                        hasAccess 
+                                        ? 'cursor-pointer hover:border-purple-200 border-transparent hover:-translate-y-1' 
+                                        : 'opacity-60 grayscale cursor-not-allowed border-dashed border-gray-200'
+                                    }`}
+                                >
+                                    {hasAccess && <div className={`absolute -right-6 -top-6 w-32 h-32 rounded-full opacity-5 ${sys.color} group-hover:scale-150 transition-transform duration-700`}></div>}
+                                    
+                                    <div>
+                                        <div className={`w-16 h-16 rounded-3xl ${sys.color} flex items-center justify-center mb-8 shadow-inner transform group-hover:rotate-6 transition-transform`}>
+                                            {hasAccess ? <Icon name={sys.icon} size={32} className={sys.iconColor} /> : <Icon name="lock" size={32} className="text-gray-400" />}
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-3 text-gray-900 leading-tight">
+                                            {sys.title} {!hasAccess && '🔒'}
+                                        </h3>
+                                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                                            {sys.desc}
+                                        </p>
+                                    </div>
+                                    
+                                    {hasAccess && (
+                                        <div className="explore-text flex items-center text-[10px] font-black uppercase tracking-widest text-purple-600">
+                                            进入系统 <Icon name="chevron-right" size={14} className="ml-1" />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <footer className="mt-auto border-t border-gray-100 pt-10 pb-8 bg-gray-100/30 rounded-t-3xl">
+                        <div className="max-w-3xl mx-auto text-center">
+                            <p className="text-[11px] text-gray-500 leading-relaxed tracking-wide font-medium">
+                                <span className="font-extrabold text-gray-600 uppercase mr-2">[ 温馨提示 ]</span>
+                                本系统处于测试运行阶段，请用户勿发布违法、违规、侵权信息或泄露他人隐私。如有违反，由此产生的一切法律责任与后果由信息发布者自行承担，本平台不承担相关责任。
+                            </p>
+                            <div className="mt-5 flex justify-center gap-4">
+                                <span className="w-1.5 h-1.5 bg-gray-200 rounded-full"></span>
+                                <span className="w-1.5 h-1.5 bg-purple-200 rounded-full"></span>
+                                <span className="w-1.5 h-1.5 bg-gray-200 rounded-full"></span>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>

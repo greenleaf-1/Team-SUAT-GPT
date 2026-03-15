@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>SaaS 分身配置厂 - 路由与引擎</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        .suat-theme { background: #75207D; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-8 font-sans text-slate-800">
+    <a href="index.html" style="position: fixed; bottom: 30px; right: 30px; background: #75207D; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 4px 15px rgba(117,32,125,0.4); z-index: 9999; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="回到主页">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter">🔮 机构分身大盘 (Tenant Configs)</h1>
+                <p class="text-sm text-slate-500 mt-1">统管各平行机构的 UI 门面、AI 大脑及发信引擎</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="window.location.href='admin.html'" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-xl font-bold shadow-sm hover:bg-slate-300 transition">👥 返回账户中心</button>
+                <button onclick="openPromptModal()" class="suat-theme text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:opacity-90 transition">➕ 新增分身系统</button>
+            </div>
+        </div>
+
+        <div id="prompt-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-10 text-slate-400 font-bold">正在拉取物理配置...</div>
+        </div>
+    </div>
+
+    <div id="prompt-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-6xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div class="suat-theme p-6 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-xl font-black">⚙️ 锻造平行分身</h3>
+                <button onclick="closePromptModal()" class="text-2xl hover:text-red-300 transition">✕</button>
+            </div>
+            
+            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                
+                <div class="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase">路由后缀 (Tenant ID)</label>
+                        <input type="text" id="m-tenant-id" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-purple-500 font-mono text-sm" placeholder="如: suat_core">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase">系统备注</label>
+                        <input type="text" id="m-remark" class="w-full mt-1 p-3 rounded-xl border outline-none focus:border-purple-500 text-sm" placeholder="如: SUAT教研部专属">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-orange-50 p-5 rounded-2xl border border-orange-100 space-y-4">
+                        <h4 class="font-black text-orange-600">🎨 C端界面展示 (UI)</h4>
+                        <div>
+                            <label class="text-[10px] font-black text-orange-500">大厅主标题</label>
+                            <input type="text" id="m-ui-title" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-orange-400 text-xs" placeholder="如: AI 招募大厅">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-orange-500">大厅副标题</label>
+                            <input type="text" id="m-ui-subtitle" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-orange-400 text-xs" placeholder="如: 找到属于你的未来">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-orange-500">提交按钮文字</label>
+                            <input type="text" id="m-ui-btn" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-orange-400 text-xs" placeholder="如: 投递简历并进行评估">
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-50 p-5 rounded-2xl border border-purple-100 space-y-4">
+                        <h4 class="font-black text-purple-700">🧠 AI 大脑提示词 (Prompt)</h4>
+                        <div>
+                            <label class="text-[10px] font-black text-purple-500">初筛指令 (Resume)</label>
+                            <textarea id="m-resume-prompt" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-purple-400 text-xs custom-scrollbar" rows="3" placeholder="打分并指出简历漏洞..."></textarea>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-purple-500">面试官指令 (Interview)</label>
+                            <textarea id="m-interview-prompt" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-purple-400 text-xs custom-scrollbar" rows="3" placeholder="你是高压面试官..."></textarea>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-purple-500">润色指令 (Ad)</label>
+                            <textarea id="m-ad-prompt" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-purple-400 text-xs custom-scrollbar" rows="2" placeholder="生成具有诱惑力的岗位广告..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100 space-y-4">
+                        <h4 class="font-black text-blue-700">✉️ 物理发信引擎 (SMTP)</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-black text-blue-500">Host (如 smtp.exmail.qq.com)</label>
+                                <input type="text" id="m-email-host" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-blue-400 text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-blue-500">Port (通常 465)</label>
+                                <input type="number" id="m-email-port" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-blue-400 text-xs">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-black text-blue-500">发件邮箱</label>
+                                <input type="text" id="m-email-sender" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-blue-400 text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-blue-500">SMTP 授权码</label>
+                                <input type="password" id="m-email-password" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-blue-400 text-xs">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-blue-500">录用邮件标题 (%s 为姓名)</label>
+                            <input type="text" id="m-email-subject" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-blue-400 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-blue-500">邮件正文 (支持 HTML 与 %s)</label>
+                            <textarea id="m-email-template" class="w-full mt-1 p-2 rounded-lg border outline-none focus:border-blue-400 text-xs custom-scrollbar" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 bg-slate-50 border-t shrink-0 flex gap-4">
+                <button onclick="closePromptModal()" class="flex-1 py-4 bg-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-300 transition">取消操作</button>
+                <button onclick="savePrompt()" class="flex-1 py-4 suat-theme text-white font-black rounded-xl shadow-lg hover:opacity-90 transition">💾 物理落盘并全网生效</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'login.html';
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        let currentEditId = null;
+
+        window.onload = fetchPrompts;
+
+        async function fetchPrompts() {
+            try {
+                const res = await axios.get(`${API_BASE}/recruit/tenant-configs`);
+                const container = document.getElementById('prompt-list');
+                if(res.data.length === 0) {
+                    container.innerHTML = `<div class="col-span-full py-10 text-center text-slate-400 font-bold">暂无分身，请点击右上角新增</div>`;
+                    return;
+                }
+                container.innerHTML = res.data.map(p => `
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-xl transition relative">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-[10px] font-black uppercase">/${p.tenantId}</span>
+                                <h3 class="font-black text-lg mt-2">${p.remark || '未命名系统'}</h3>
+                            </div>
+                            <button onclick='editPrompt(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="suat-theme text-white text-xs px-4 py-2 rounded-lg font-bold shadow-md hover:opacity-80">修改引擎</button>
+                        </div>
+                        <div class="text-xs text-slate-500 mb-1"><span class="font-bold text-orange-500">UI 主题:</span> ${p.uiTitle || '默认'}</div>
+                        <div class="text-xs text-slate-500 mb-1"><span class="font-bold text-blue-500">发信源:</span> ${p.emailSender || '未配置'}</div>
+                        <div class="text-xs text-slate-500 line-clamp-1"><span class="font-bold text-purple-500">大脑状态:</span> ${p.interviewPrompt ? '已接入' : '未接入'}</div>
+                    </div>
+                `).join('');
+            } catch (e) { alert("获取物理配置失败"); }
+        }
+
+        function openPromptModal() {
+            currentEditId = null;
+            document.querySelectorAll('#prompt-modal input, #prompt-modal textarea').forEach(el => el.value = '');
+            document.getElementById('m-email-port').value = '465'; // 默认值
+            document.getElementById('prompt-modal').classList.remove('hidden');
+        }
+
+        function editPrompt(p) {
+            currentEditId = p.id;
+            document.getElementById('m-tenant-id').value = p.tenantId || '';
+            document.getElementById('m-remark').value = p.remark || '';
+            
+            // UI
+            document.getElementById('m-ui-title').value = p.uiTitle || '';
+            document.getElementById('m-ui-subtitle').value = p.uiSubtitle || '';
+            document.getElementById('m-ui-btn').value = p.uiBtnText || '';
+
+            // AI
+            document.getElementById('m-interview-prompt').value = p.promptInterview || p.interviewPrompt || '';
+            document.getElementById('m-resume-prompt').value = p.promptResume || p.resumePrompt || '';
+            document.getElementById('m-ad-prompt').value = p.promptAd || p.adPrompt || '';
+
+            // Email
+            document.getElementById('m-email-host').value = p.emailHost || 'smtp.qq.com';
+            document.getElementById('m-email-port').value = p.emailPort || '465';
+            document.getElementById('m-email-sender').value = p.emailSender || '';
+            document.getElementById('m-email-password').value = p.emailPassword || '';
+            document.getElementById('m-email-subject').value = p.emailSubject || '';
+            document.getElementById('m-email-template').value = p.emailTemplate || '';
+            
+            document.getElementById('prompt-modal').classList.remove('hidden');
+        }
+
+        async function savePrompt() {
+            const payload = {
+                id: currentEditId,
+                tenantId: document.getElementById('m-tenant-id').value,
+                remark: document.getElementById('m-remark').value,
+                
+                uiTitle: document.getElementById('m-ui-title').value,
+                uiSubtitle: document.getElementById('m-ui-subtitle').value,
+                uiBtnText: document.getElementById('m-ui-btn').value,
+                
+                // 兼容后端的字段命名 (视您的 Java Entity 命名而定)
+                promptInterview: document.getElementById('m-interview-prompt').value,
+                promptResume: document.getElementById('m-resume-prompt').value,
+                promptAd: document.getElementById('m-ad-prompt').value,
+                
+                emailHost: document.getElementById('m-email-host').value,
+                emailPort: document.getElementById('m-email-port').value ? parseInt(document.getElementById('m-email-port').value) : 465,
+                emailSender: document.getElementById('m-email-sender').value,
+                emailPassword: document.getElementById('m-email-password').value,
+                emailSubject: document.getElementById('m-email-subject').value,
+                emailTemplate: document.getElementById('m-email-template').value
+            };
+            if(!payload.tenantId) return alert("必须填写路由后缀 (Tenant ID)！");
+
+            try {
+                await axios.post(`${API_BASE}/recruit/tenant-configs/save`, payload);
+                closePromptModal();
+                fetchPrompts();
+            } catch (e) { alert("保存物理配置失败！"); }
+        }
+
+        function closePromptModal() { document.getElementById('prompt-modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>

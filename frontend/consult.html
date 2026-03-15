@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态加载中...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .dynamic-theme { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        .prose table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+        .prose th, .prose td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body class="bg-blue-50 font-sans text-slate-900 min-h-screen flex flex-col items-center p-4">
+    <a href="index.html" style="position: fixed; bottom: 30px; right: 30px; background: #75207D; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 4px 15px rgba(117,32,125,0.4); z-index: 9999; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="回到主页">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
+    <div class="text-center mt-10 mb-8 w-full max-w-3xl">
+        <h1 id="ui-title" class="text-4xl font-black text-blue-900 tracking-tight mb-3">...</h1>
+        <p id="ui-welcome" class="text-blue-600 font-bold">正在获取服务器物理配置...</p>
+    </div>
+
+    <div id="upload-section" class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-[2rem] shadow-xl border border-blue-100">
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" id="c-name" placeholder="真实姓名 (必填)" class="w-full p-4 rounded-xl border outline-none focus:border-blue-500 bg-slate-50 font-bold">
+            <input type="email" id="c-email" placeholder="联系邮箱 (用于接收诊断报告)" class="w-full p-4 rounded-xl border outline-none focus:border-blue-500 bg-slate-50 font-bold">
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div class="border-2 border-dashed border-blue-200 rounded-2xl p-8 text-center hover:bg-blue-50 hover:border-blue-400 cursor-pointer transition flex flex-col justify-center items-center group" onclick="document.getElementById('c-file').click()">
+                <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📄</div>
+                <h3 class="font-black text-blue-900 text-lg">上传过往履历文档</h3>
+                <p class="text-xs text-blue-500 mt-2">支持 PDF / Word，系统自动扫描</p>
+                <input type="file" id="c-file" class="hidden" onchange="startConsult('file')">
+            </div>
+
+            <div class="bg-blue-50/50 p-6 rounded-2xl border-2 border-blue-100 flex flex-col gap-3">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-2xl">✍️</span>
+                    <h4 class="font-black text-blue-900">直接粘贴履历文字</h4>
+                </div>
+                <textarea id="c-text" class="w-full p-4 rounded-xl border border-blue-200 text-sm outline-none focus:ring-2 ring-blue-400 custom-scrollbar bg-white flex-1" placeholder="在此粘贴您的工作经历、项目经验或核心诉求..." rows="5"></textarea>
+                <button onclick="startConsult('text')" class="w-full mt-2 py-3 dynamic-theme text-white rounded-xl font-black shadow-md hover:opacity-90 transition active:scale-95">提交文字并启动引擎</button>
+            </div>
+            
+        </div>
+        
+        <div id="loading-overlay" class="hidden mt-8 text-center p-6 bg-blue-50 rounded-2xl border border-blue-100">
+            <div class="text-4xl animate-bounce mb-3">🔮</div>
+            <h3 class="text-lg font-black text-blue-800 animate-pulse" id="loading-text">引擎启动中，正在深度扫描履历...</h3>
+        </div>
+    </div>
+
+    <div id="chat-section" class="hidden w-full max-w-3xl bg-white rounded-[2rem] shadow-2xl border border-blue-100 overflow-hidden flex flex-col h-[75vh]">
+        <div class="dynamic-theme text-white p-4 font-black flex justify-between items-center z-10 shadow-md">
+            <span>💡 专家深度探索中 (5轮诊断)</span>
+            <span class="text-xs bg-white/20 px-2 py-1 rounded">档案号: <span id="rid-display">--</span></span>
+        </div>
+        <div id="chat-stream" class="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar bg-slate-50 space-y-4"></div>
+        <div id="input-area" class="p-4 bg-white border-t flex gap-2">
+            <input type="text" id="chat-input" class="flex-1 bg-blue-50 px-4 py-3 rounded-xl outline-none focus:ring-2 ring-blue-400 text-sm" placeholder="输入您的想法..." onkeyup="if(event.key==='Enter') sendReply()">
+            <button onclick="sendReply()" class="dynamic-theme text-white px-6 rounded-xl font-bold shadow-md hover:opacity-90">发送</button>
+        </div>
+    </div>
+
+<script>
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : `${window.location.protocol}//${window.location.host}/api`;
+    const urlParams = new URLSearchParams(window.location.search);
+    const tenantId = urlParams.get('tenant') || 'default';
+    let recordId = null;
+
+    window.onload = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/consult/config?tenantId=${tenantId}`);
+            document.title = res.data.uiPageTitle;
+            document.getElementById('ui-title').innerText = res.data.uiPageTitle;
+            document.getElementById('ui-welcome').innerText = res.data.uiWelcomeMsg;
+        } catch(e) { console.error("配置拉取失败"); }
+    };
+
+    // 🚀 核心升级：兼容文件与纯文本两种数据源
+    async function startConsult(type) {
+        const name = document.getElementById('c-name').value.trim();
+        const email = document.getElementById('c-email').value.trim();
+        
+        if(!name || !email) return alert("请先填写您的真实姓名和联系邮箱！");
+
+        const fd = new FormData();
+        fd.append('userName', name); 
+        fd.append('email', email); 
+        fd.append('tenantId', tenantId);
+
+        if (type === 'file') {
+            const fileInput = document.getElementById('c-file');
+            if(!fileInput.files[0]) return; // 用户取消选择
+            fd.append('file', fileInput.files[0]);
+        } else if (type === 'text') {
+            const textContent = document.getElementById('c-text').value.trim();
+            if(!textContent) return alert("履历文字不能为空！");
+            
+            // 💡 黑科技：将纯文本封装成虚拟 .txt 文件，直接穿透后端 MultipartFile 校验
+            const fakeFile = new File([new Blob([textContent])], `${name}_履历描述.txt`, { type: "text/plain" });
+            fd.append('file', fakeFile);
+        }
+
+        // 切换 Loading UI
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        document.querySelectorAll('#upload-section input, #upload-section textarea, #upload-section button').forEach(el => el.disabled = true);
+
+        try {
+            const res = await axios.post(`${API_BASE}/consult/upload`, fd);
+            recordId = res.data.recordId;
+            document.getElementById('upload-section').classList.add('hidden');
+            document.getElementById('chat-section').classList.remove('hidden');
+            document.getElementById('rid-display').innerText = recordId;
+            appendMsg("AI", res.data.reply);
+        } catch(e) { 
+            alert("诊断引擎启动失败，请检查网络或精简文字。"); 
+            location.reload(); 
+        }
+    }
+
+    async function sendReply() {
+        const input = document.getElementById('chat-input');
+        const msg = input.value.trim();
+        if(!msg) return;
+
+        appendMsg("ME", msg);
+        input.value = "";
+        input.disabled = true;
+
+        try {
+            const res = await axios.post(`${API_BASE}/consult/chat`, { recordId: recordId, message: msg, tenantId: tenantId });
+            
+            if (res.data.isFinished) {
+                document.getElementById('input-area').classList.add('hidden');
+                appendMsg("AI", "### 🎉 漏斗诊断结束！以下是您的专属报告：\n\n" + res.data.report);
+            } else {
+                appendMsg("AI", res.data.reply);
+            }
+        } catch(e) { appendMsg("AI", "⚠️ 物理链路中断，请重试"); }
+        finally { input.disabled = false; input.focus(); }
+    }
+
+    function appendMsg(role, text) {
+        const win = document.getElementById('chat-stream');
+        const div = document.createElement('div');
+        div.className = role === 'ME' ? 'flex justify-end' : 'flex justify-start';
+        div.innerHTML = `<div class="max-w-[90%] p-4 rounded-2xl text-sm ${role === 'ME' ? 'dynamic-theme text-white' : 'bg-white border prose shadow-sm'}">${role === 'AI' ? marked.parse(text) : text}</div>`;
+        win.appendChild(div);
+        win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>

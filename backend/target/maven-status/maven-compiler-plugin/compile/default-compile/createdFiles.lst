@@ -4,6 +4,7 @@ suatgpt\backend\config\AiProperties.class
 suatgpt\backend\service\HomeworkService.class
 suatgpt\backend\service\InterviewCleanupService.class
 suatgpt\backend\controller\JobController.class
+suatgpt\backend\repository\ConsultRecordRepository.class
 suatgpt\backend\config\AiProperties$ConfigItem.class
 suatgpt\backend\controller\AiController$MessageResponse.class
 suatgpt\backend\controller\AuthController$AuthResponse.class
@@ -14,14 +15,18 @@ suatgpt\backend\controller\CourseController.class
 suatgpt\backend\controller\HomeworkController.class
 suatgpt\backend\repository\ChatSessionRepository.class
 suatgpt\backend\controller\CourseEvalController.class
+suatgpt\backend\model\TenantConfig.class
 suatgpt\backend\model\User.class
+suatgpt\backend\model\ConsultRecord.class
 suatgpt\backend\utils\JwtUtils.class
 suatgpt\backend\controller\AiController$CreateSessionRequest.class
 suatgpt\backend\repository\InterviewRecordRepository.class
 suatgpt\backend\model\ChatSession.class
 suatgpt\backend\repository\ChatMessageRepository.class
+suatgpt\backend\service\ConsultService.class
 suatgpt\backend\config\HomeworkPromptRegistry.class
 suatgpt\backend\config\InterviewPromptRegistry.class
+suatgpt\backend\repository\TenantConfigRepository.class
 suatgpt\backend\model\MentorMapping.class
 suatgpt\backend\service\DiaryAgentService.class
 suatgpt\backend\config\CoursePromptRegistry.class
@@ -38,6 +43,7 @@ suatgpt\backend\service\InterviewService.class
 suatgpt\backend\controller\CourseController$1.class
 suatgpt\backend\controller\HealthController.class
 suatgpt\backend\service\MailService.class
+suatgpt\backend\controller\ConsultController.class
 suatgpt\backend\model\Job.class
 suatgpt\backend\repository\UserRepository.class
 suatgpt\backend\config\UserPrincipal.class
@@ -45,7 +51,9 @@ suatgpt\backend\repository\MentorMappingRepository.class
 suatgpt\backend\SuatGptBackendApplication.class
 suatgpt\backend\service\CsvDataInitService.class
 suatgpt\backend\repository\HomeworkRecordRepository.class
+suatgpt\backend\repository\ConsultConfigRepository.class
 suatgpt\backend\controller\AuthController.class
+suatgpt\backend\model\ConsultConfig.class
 suatgpt\backend\service\SecurityUserDetailsService.class
 suatgpt\backend\config\WebSecurityConfig.class
 suatgpt\backend\controller\RecruitController.class
